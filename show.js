@@ -99,24 +99,27 @@ var createSlideErrorPromise = function() {
 };
 
 // Display the title and the subreddit of the current post.
-var $ce = (prnt, tag) => prnt.appendChild(document.createElement(tag));
-var postInfoDisplayBlock = $ce(document.body, "div");
-var postInfoDisplayTitleP = $ce(postInfoDisplayBlock, "p");
-var postInfoDisplayTitleLink = $ce(postInfoDisplayTitleP, "a");
-var postInfoDisplaySubredditP = $ce(postInfoDisplayBlock, "p");
-var postInfoDisplaySubredditLink = $ce(postInfoDisplaySubredditP, "a");
-postInfoDisplayBlock.id = "postInfoDisplayBlock";
-postInfoDisplayTitleP.id = "postInfoDisplayTitleP";
-postInfoDisplayTitleLink.id = "postInfoDisplayTitleLink";
-postInfoDisplaySubredditP.id = "postInfoDisplaySubredditP";
-postInfoDisplaySubredditLink.id = "postInfoDisplaySubredditLink";
-postInfoDisplayTitleLink.target = "_blank";
-postInfoDisplaySubredditLink.target = "_blank";
+var dataDiv = document.body.appendChild(document.createElement("div"));
+dataDiv.style.zIndex = 2;
+dataDiv.style.position = "absolute";
+dataDiv.style.maxWidth = "75%";
+dataDiv.style.bottom = 0;
+dataDiv.style.left = "20px";
+var dataTitleP = dataDiv.appendChild(document.createElement("p"));
+var dataTitleA = dataTitleP.appendChild(document.createElement("a"));
+dataTitleA.target = "_blank";
+var dataSubP = dataDiv.appendChild(document.createElement("p"));
+var dataSubA = dataSubP.appendChild(document.createElement("a"));
+dataSubA.target = "_blank";
+dataTitleP.id = "postInfoDisplayTitleP";
+dataTitleA.id = "postInfoDisplayTitleLink";
+dataSubP.id = "postInfoDisplaySubredditP";
+dataSubA.id = "postInfoDisplaySubredditLink";
 var updatePostInfoDisplay = function(post) {
-	postInfoDisplayTitleLink.textContent = post.title;
-	postInfoDisplayTitleLink.href = post.link;
-	postInfoDisplaySubredditLink.textContent = "/r/" + post.subreddit;
-	postInfoDisplaySubredditLink.href = "https://www.reddit.com/r/" + post.subreddit;
+	dataTitleA.textContent = post.title;
+	dataTitleA.href = post.link;
+	dataSubA.textContent = "/r/" + post.subreddit;
+	dataSubA.href = "https://www.reddit.com/r/" + post.subreddit;
 };
 
 // Display the media element of the current post.
@@ -203,7 +206,7 @@ window.addEventListener("resize", function() {
 // Update the progress indicator.
 var colorPrimaryMajor = getComputedStyle(document.body).getPropertyValue("--primary-major");
 var colorSecondaryMinor = getComputedStyle(document.body).getPropertyValue("--secondary-minor");
-var progressCanvas = $ce(document.body, "canvas");
+var progressCanvas = document.body.appendChild(document.createElement("canvas"));
 progressCanvas.id = "progressCanvas";
 progressCanvas.width = 100;
 progressCanvas.height = 100;
