@@ -1,57 +1,61 @@
 <!DOCTYPE html>
-<html>
-<head>
-<title>Nice!</title>
-<link rel="stylesheet" type="text/css" href="/style.css" />
-<script type="text/javascript" src="/gather.js"></script>
-<script type="text/javascript" src="/show.js"></script>
-<script type="text/javascript" src="/run.js"></script>
-</head>
-<body>
-<div id="settingsDiv">
-	<div id="firstRowDiv">
-		<p>
-			Enter the names of the subreddits of your choice, separate them by one space &#9251; :</p>
-			<input id="subredditList" autofocus placeholder="aww Overwatch me_irl" spellcheck="false">
-	</div>
-	<div id="secondRowDiv">
-		<div id="methodDiv">
-			<p>Sort by:</p>
-			<label><input type="radio" id="sortingMethodHot" name="sortingMethod" value="hot" checked>Hot</label>
-			<label><input type="radio" id="sortingMethodTop" name="sortingMethod" value="top">Top</label>
-			<label><input type="radio" id="sortingMethodNew" name="sortingMethod" value="new">New</label>
-			<label><input type="radio" id="sortingMethodRising" name="sortingMethod" value="rising">Rising</label>
-			<label><input type="radio" id="sortingMethodControversial" name="sortingMethod" value="controversial">Controversial</label>
-		</div>
-		<div id="periodDiv">
-			<p>Period:</p>
-			<label><input type="radio" id="sortingPeriodHour" name="sortingPeriod" value="hour">Past hour</label>
-			<label><input type="radio" id="sortingPeriodDay" name="sortingPeriod" value="day">Past 24 hours</label>
-			<label><input type="radio" id="sortingPeriodWeek" name="sortingPeriod" value="week" checked>Past week</label>
-			<label><input type="radio" id="sortingPeriodMonth" name="sortingPeriod" value="month">Past month</label>
-			<label><input type="radio" id="sortingPeriodYear" name="sortingPeriod" value="year">Past year</label>
-			<label><input type="radio" id="sortingPeriodAll" name="sortingPeriod" value="all">All time</label>
-		</div>
-		<div id="durationShuffleDiv">
-			<p>
-				Slide Duration: <input type="number" id="slideDuration" min="1" step="1" value="10"> seconds
-			</p>
-			<p>
-				<label>
-					<input type="checkbox" id="shuffleSubreddits" name="shuffleSubreddits" checked>
-					Shuffle subreddits for every new round of slides
-				</label>
-			</p>
-		</div>
-	</div>
-	<div id="thirdRowDiv">
-		<p>
-			Press Enter to proceed.
-			<br>Press P to pause the slideshow.
-			<br>Press Space or LeftArrow to jump to the next slide.
-			<br>Press Backspace or RightArrow to go back to the previous slide.
-		</p>
-	</div>
-</div>
-</body>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="author" content="Josfredus">
+    <meta name="description" content="Josfredus is an app that runs a slide show, using content from various subreddits of your input.">
+    <title>Nice!</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.png" />
+    <link rel="stylesheet" type="text/css" href="/style.css" />
+    <script type="text/javascript" src="/gather.js"></script>
+    <script type="text/javascript" src="/show.js"></script>
+    <script type="text/javascript" src="/run.js"></script>
+  </head>
+  <body>
+    <div id="settingsDiv">
+      <div id="firstRowDiv">
+        <p>
+          Enter the names of the subreddits of your choice, separate them by one space &#9251; :</p>
+          <input id="subredditList" autofocus placeholder="aww Overwatch me_irl" spellcheck="false">
+      </div>
+      <div id="secondRowDiv">
+        <div id="methodDiv">
+          <p>Sort by:</p>
+          <label><input type="radio" id="sortingMethodHot" name="sortingMethod" value="hot" checked>Hot</label>
+          <label><input type="radio" id="sortingMethodTop" name="sortingMethod" value="top">Top</label>
+          <label><input type="radio" id="sortingMethodNew" name="sortingMethod" value="new">New</label>
+          <label><input type="radio" id="sortingMethodRising" name="sortingMethod" value="rising">Rising</label>
+          <label><input type="radio" id="sortingMethodControversial" name="sortingMethod" value="controversial">Controversial</label>
+        </div>
+        <div id="periodDiv">
+          <p>Period:</p>
+          <label><input type="radio" id="sortingPeriodHour" name="sortingPeriod" value="hour">Past hour</label>
+          <label><input type="radio" id="sortingPeriodDay" name="sortingPeriod" value="day">Past 24 hours</label>
+          <label><input type="radio" id="sortingPeriodWeek" name="sortingPeriod" value="week" checked>Past week</label>
+          <label><input type="radio" id="sortingPeriodMonth" name="sortingPeriod" value="month">Past month</label>
+          <label><input type="radio" id="sortingPeriodYear" name="sortingPeriod" value="year">Past year</label>
+          <label><input type="radio" id="sortingPeriodAll" name="sortingPeriod" value="all">All time</label>
+        </div>
+        <div id="durationShuffleDiv">
+          <p>
+            Slide Duration: <input type="number" id="slideDuration" min="1" step="1" value="10"> seconds
+          </p>
+          <p>
+            <label>
+              <input type="checkbox" id="shuffleSubreddits" name="shuffleSubreddits" checked>
+              Shuffle subreddits for every new round of slides
+            </label>
+          </p>
+        </div>
+      </div>
+      <div id="thirdRowDiv">
+        <p>
+          Press Enter to proceed.
+          <br>Press P to pause the slideshow.
+          <br>Press Space or LeftArrow to jump to the next slide.
+          <br>Press Backspace or RightArrow to go back to the previous slide.
+        </p>
+      </div>
+    </div>
+  </body>
 </html>
