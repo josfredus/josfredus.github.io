@@ -99,12 +99,12 @@ var createSlideErrorPromise = function() {
 };
 
 // Display the title and the subreddit of the current post.
-var crElm = (prnt, tag) => prnt.appendChild(document.createElement(tag));
-var postInfoDisplayBlock = crElm(document.body, "div");
-var postInfoDisplayTitleP = crElm(postInfoDisplayBlock, "p");
-var postInfoDisplayTitleLink = crElm(postInfoDisplayTitleP, "a");
-var postInfoDisplaySubredditP = crElm(postInfoDisplayBlock, "p");
-var postInfoDisplaySubredditLink = crElm(postInfoDisplaySubredditP, "a");
+var $ce = (prnt, tag) => prnt.appendChild(document.createElement(tag));
+var postInfoDisplayBlock = $ce(document.body, "div");
+var postInfoDisplayTitleP = $ce(postInfoDisplayBlock, "p");
+var postInfoDisplayTitleLink = $ce(postInfoDisplayTitleP, "a");
+var postInfoDisplaySubredditP = $ce(postInfoDisplayBlock, "p");
+var postInfoDisplaySubredditLink = $ce(postInfoDisplaySubredditP, "a");
 postInfoDisplayBlock.id = "postInfoDisplayBlock";
 postInfoDisplayTitleP.id = "postInfoDisplayTitleP";
 postInfoDisplayTitleLink.id = "postInfoDisplayTitleLink";
@@ -203,11 +203,10 @@ window.addEventListener("resize", function() {
 // Update the progress indicator.
 var colorPrimaryMajor = getComputedStyle(document.body).getPropertyValue("--primary-major");
 var colorSecondaryMinor = getComputedStyle(document.body).getPropertyValue("--secondary-minor");
-var progressCanvas = document.createElement("canvas");
+var progressCanvas = $ce(document.body, "canvas");
 progressCanvas.id = "progressCanvas";
 progressCanvas.width = 100;
 progressCanvas.height = 100;
-document.body.appendChild(progressCanvas);
 var ctx = progressCanvas.getContext("2d");
 var launchProgressAnimation = function(slideDuration) {
 	var slideStartEpoch = Date.now();
