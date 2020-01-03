@@ -8,6 +8,20 @@
 body {
 	background-color: var(--background-color);
 }
+.primaryLink {
+  text-decoration: none;
+  color: var(--primary-major);
+}
+.primaryLink:hover, .primaryLink:active {
+  color: var(--primary-minor);
+}
+.secondaryLink {
+	text-decoration: none;
+	color: var(--secondary-major);
+}
+.secondaryLink:hover, .secondaryLink:active {
+	color: var(--secondary-minor);
+}
 #postInfoDisplayBlock {
 	z-index: 2;
 	position: absolute;
