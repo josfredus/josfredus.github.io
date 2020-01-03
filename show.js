@@ -99,11 +99,12 @@ var createSlideErrorPromise = function() {
 };
 
 // Display the title and the subreddit of the current post.
-var postInfoDisplayBlock = document.body.appendChild(document.createElement("div"));
-var postInfoDisplayTitleP = postInfoDisplayBlock.appendChild(document.createElement("p"));
-var postInfoDisplayTitleLink = postInfoDisplayTitleP.appendChild(document.createElement("a"));
-var postInfoDisplaySubredditP = postInfoDisplayBlock.appendChild(document.createElement("p"));
-var postInfoDisplaySubredditLink = postInfoDisplaySubredditP.appendChild(document.createElement("a"));
+var crElm = (prnt, tag) => prnt.appendChild(document.createElement(tag));
+var postInfoDisplayBlock = crElm(document.body, "div");
+var postInfoDisplayTitleP = crElm(postInfoDisplayBlock, "p");
+var postInfoDisplayTitleLink = crElm(postInfoDisplayTitleP, "a");
+var postInfoDisplaySubredditP = crElm(postInfoDisplayBlock, "p");
+var postInfoDisplaySubredditLink = crElm(postInfoDisplaySubredditP, "a");
 postInfoDisplayBlock.id = "postInfoDisplayBlock";
 postInfoDisplayTitleP.id = "postInfoDisplayTitleP";
 postInfoDisplayTitleLink.id = "postInfoDisplayTitleLink";
