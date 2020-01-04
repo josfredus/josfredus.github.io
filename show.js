@@ -7,10 +7,12 @@ document.body.scroll = "no";
 if (settings.subredditList.length === 0) {
 	throw Error("No subreddit submitted");
 }
-var fetchers = [];
+/*var fetchers = [];
 settings.subredditList.forEach(function(subredditName) {
 	fetchers.push(new PostFetcher(subredditName, settings.sorting));
-});
+});*/
+const xtrs = settings.subredditList.map(
+  sub => new ContentExtractor(sub, settings.sorting, settings.period));
 
 // The nextFetcherIndexGenerator generator yields indexes to be used by an array of PostFetchers.
 // If "false" is passed as an argument for the "shuffle" parameter,
@@ -43,7 +45,7 @@ var nextFetcherIndexGenerator = function*(numberOfFetchers, shuffle) {
 		}
 	}
 };
-var indexGenerator = nextFetcherIndexGenerator(fetchers.length, settings.shuffleSubreddits);
+var indexGenerator = nextFetcherIndexGenerator(xtrs.length, settings.shuffleSubreddits);
 
 // The next functions return promises that resolve when a certain event occurs.
 // When they resolve, these promises pass the nature of the event they had to detect.
@@ -121,7 +123,7 @@ dataSubA.rel = "noreferrer noopener";
 dataSubA.className = "secondaryLink";
 const displayContentData = function(content) {
   dataTitleA.textContent = content.title;
-  dataTitleA.href = content.link;
+  dataTitleA.href = content.permalink;
   dataSubA.textContent = "/r/" + content.subreddit;
   dataSubA.href = "https://www.reddit.com/r/" + content.subreddit;
 };
@@ -203,11 +205,11 @@ var placeAndFitMediaElement = function(element) {
 };
 var promiseLoadMediaElement = function(post) {
 	return new Promise(function(resolve, reject) {
-		if (post.mediaType === "image") {
+		if (post.type === "img") {
 			var newMediaElement = document.createElement("img");
 			newMediaElement.zIndex = 0;
 			newMediaElement.onerror = error => reject(error);
-			newMediaElement.src = post.mediaURL;
+			newMediaElement.src = post.src;
 			newMediaElement.addEventListener("load", function() {
 				placeAndFitMediaElement(newMediaElement);
 				if (mediaElement.parentNode) {
@@ -217,22 +219,16 @@ var promiseLoadMediaElement = function(post) {
 				resolve(settings.normalSlideDuration);
 			});
 		}
-		else if (post.mediaType === "video" || post.mediaType === "gifv") {
+		else if (post.type === "video") {
 			var newMediaElement = document.createElement("video");
+      newMediaElement.preload = "auto"
 			newMediaElement.zIndex = 0;
 			newMediaElement.onerror = error => reject(error);
-			if (post.mediaType === "video") {
-				newMediaElement.src = post.mediaURL;
-			}
-			else {
-				var mediaURLWithoutExtension = post.mediaURL.slice(0, -5);
-				var webmSource = document.createElement("source");
-				var mp4Source = document.createElement("source");
-				webmSource.src = mediaURLWithoutExtension + ".webm";
-				mp4Source.src = mediaURLWithoutExtension + ".mp4";
-				newMediaElement.appendChild(webmSource);
-				newMediaElement.appendChild(mp4Source);
-			}
+      post.src.forEach(function(src) {
+        const el = document.createElement("source");
+        el.src = src;
+        newMediaElement.appendChild(el);
+      });
 			newMediaElement.loop = true;
 			newMediaElement.controls = true;
 			newMediaElement.addEventListener("canplay", function callback() {
@@ -289,10 +285,10 @@ var slideErrorPromise = createSlideErrorPromise();
 var preloadNextPostPromise = true;
 var preloadedNextPostPromise = null;
 
-return fetchers[indexGenerator.next().value].getNextPostPromise().then(registerPostInMemory).then(function showSlide(post) {
+return xtrs[indexGenerator.next().value].getNextContent().then(registerPostInMemory).then(function showSlide(post) {
 	// Preload the next post promise.
 	if (preloadNextPostPromise) {
-		preloadedNextPostPromise = fetchers[indexGenerator.next().value].getNextPostPromise();
+		preloadedNextPostPromise = xtrs[indexGenerator.next().value].getNextContent();
 		preloadNextPostPromise = false;
 	}
 	displayContentData(post);
@@ -332,7 +328,7 @@ return fetchers[indexGenerator.next().value].getNextPostPromise().then(registerP
 				preloadNextPostPromise = true;
 				return preloadedNextPostPromise.then(registerPostInMemory);
 			}
-			else {
+			else { // ntm ya pas deux L à "traveler"
 				timeTravellerIndex = Math.max(timeTravellerIndex - 1, 0);
 				return shownPostsMemory[shownPostsMemory.length - 1 - timeTravellerIndex];
 			}
@@ -355,6 +351,7 @@ return fetchers[indexGenerator.next().value].getNextPostPromise().then(registerP
 		}
 	})
 	.then(showSlide);
-});
+})
+.catch(()=>console.log("YARRR MATEY YER A SORE BUM PIRATE"));
 
 };

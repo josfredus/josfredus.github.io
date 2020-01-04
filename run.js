@@ -30,7 +30,8 @@ var launchSettingsScreen = function() {
 			}
 			var settings = {
 				subredditList: subredditList.value.trim().split(" "),
-				sorting: new Sorting(sortingMethod, sortingPeriod),
+				sorting: sortingMethod,
+        period: sortingPeriod,
 				normalSlideDuration: Math.round(slideDuration.value * 1000),
 				shuffleSubreddits: document.querySelector("#shuffleSubreddits").checked,
 			};
