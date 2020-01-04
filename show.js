@@ -104,16 +104,16 @@ dataDiv.style.position = "absolute";
 dataDiv.style.bottom = 0;
 dataDiv.style.left = 0;
 dataDiv.style.maxWidth = "75%";
-dataDiv.style.margin = "1em";
+dataDiv.style.margin = "1rem";
 const dataTitleP = dataDiv.appendChild(document.createElement("p"));
-dataTitleP.style.font = "x-large helvetica, sans-serif";
+dataTitleP.style.font = "1.5em helvetica, sans-serif";
 dataTitleP.style.margin = 0;
 const dataTitleA = dataTitleP.appendChild(document.createElement("a"));
 dataTitleA.target = "_blank";
 dataTitleA.rel = "noreferrer noopener";
 dataTitleA.className = "primaryLink";
 const dataSubP = dataDiv.appendChild(document.createElement("p"));
-dataSubP.style.font = "medium verdana, sans-serif";
+dataSubP.style.font = "1em verdana, sans-serif";
 dataSubP.style.margin = 0;
 const dataSubA = dataSubP.appendChild(document.createElement("a"));
 dataSubA.target = "_blank";
@@ -208,19 +208,12 @@ window.addEventListener("resize", function() {
 });
 
 // Update the progress indicator.
-/*
-var colorPrimaryMajor = getComputedStyle(document.body).getPropertyValue("--primary-major");
-var colorSecondaryMinor = getComputedStyle(document.body).getPropertyValue("--secondary-minor");
-var progressCanvas = document.body.appendChild(document.createElement("canvas"));
-progressCanvas.id = "progressCanvas";
-progressCanvas.width = 100;
-progressCanvas.height = 100;
-var ctx = progressCanvas.getContext("2d");
-*/
 const css = getComputedStyle(document.body);
 const pMaj = css.getPropertyValue("--primary-major");
+const pMin = css.getPropertyValue("--primary-minor");
+const sMaj = css.getPropertyValue("--secondary-major");
 const sMin = css.getPropertyValue("--secondary-minor");
-const size = 100;
+const size = 256;
 const canvas = document.body.appendChild(document.createElement("canvas"));
 canvas.width = size;
 canvas.height = size;
@@ -228,7 +221,9 @@ canvas.style.position = "absolute";
 canvas.style.zIndex = 1;
 canvas.style.bottom = 0;
 canvas.style.right = 0;
-canvas.style.margin = "1em";
+canvas.style.margin = "1rem";
+canvas.style.width = "4rem";
+canvas.style.height = "4rem";
 const ctx = canvas.getContext("2d");
 const launchProgressAnimation = function(duration) {
 	const start = Date.now();
@@ -237,11 +232,10 @@ const launchProgressAnimation = function(duration) {
 		if (!slideshowIsPaused) {
 			const time = Date.now() - start;
 			const angle = (time / duration - 1/4) * 2 * Math.PI;
-			const outer = size * 2/5;
 			const inner = size / 4;
-			ctx.fillStyle = sMin;
+			ctx.fillStyle = pMin;
 			ctx.beginPath();
-			ctx.arc(size/2, size/2, outer, -Math.PI/2, angle, false);
+			ctx.arc(size/2, size/2, size/2, -Math.PI/2, angle, false);
 			ctx.lineTo(size/2+Math.cos(angle)*inner, size/2+Math.sin(angle)*inner);
 			ctx.arc(size/2, size/2, inner, angle, -Math.PI/2, true);
 			ctx.fill();
@@ -249,24 +243,21 @@ const launchProgressAnimation = function(duration) {
 			ctx.strokeStyle = pMaj;
 			ctx.lineWidth = 2;
 			ctx.beginPath();
-			ctx.arc(size/2, size/2, outer, -Math.PI/2, angle, false);
+			ctx.arc(size/2, size/2, inner, -Math.PI/2, angle, false);
 			ctx.stroke();
-			window.requestAnimationFrame(draw);
+      if (time < duration)
+        window.requestAnimationFrame(draw);
 		}
 	});
 };
 var drawPauseSymbol = function() {
 	window.requestAnimationFrame(function() {
-		ctx.clearRect(0, 0, progressCanvas.width, progressCanvas.height);
-		ctx.fillStyle = colorSecondaryMinor;
-		ctx.fillRect(progressCanvas.width / 5,
-			progressCanvas.height / 5,
-			progressCanvas.width / 5,
-			progressCanvas.height * 3 / 5);
-		ctx.fillRect(progressCanvas.width * 3 / 5,
-			progressCanvas.height / 5,
-			progressCanvas.width / 5,
-			progressCanvas.height * 3 / 5);
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const margin = size / 4;
+    const barWidth = (size - 2 * margin) / 3;
+		ctx.fillStyle = pMin;
+		ctx.fillRect(margin, margin, barWidth, size-2*margin);
+		ctx.fillRect(size-margin-barWidth, margin, barWidth, size-2*margin);
 	});
 };
 
