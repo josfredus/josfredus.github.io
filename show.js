@@ -119,11 +119,69 @@ const dataSubA = dataSubP.appendChild(document.createElement("a"));
 dataSubA.target = "_blank";
 dataSubA.rel = "noreferrer noopener";
 dataSubA.className = "secondaryLink";
-const displayContentData = function(cnt) {
-	dataTitleA.textContent = cnt.title;
-	dataTitleA.href = cnt.link;
-	dataSubA.textContent = "/r/" + cnt.subreddit;
-	dataSubA.href = "https://www.reddit.com/r/" + cnt.subreddit;
+const displayContentData = function(content) {
+  dataTitleA.textContent = content.title;
+  dataTitleA.href = content.link;
+  dataSubA.textContent = "/r/" + content.subreddit;
+  dataSubA.href = "https://www.reddit.com/r/" + content.subreddit;
+};
+
+// Update the progress indicator.
+const css = getComputedStyle(document.body);
+const pMaj = css.getPropertyValue("--primary-major");
+const pMin = css.getPropertyValue("--primary-minor");
+const sMaj = css.getPropertyValue("--secondary-major");
+const sMin = css.getPropertyValue("--secondary-minor");
+const size = 256;
+const canvas = document.body.appendChild(document.createElement("canvas"));
+canvas.width = size;
+canvas.height = size;
+canvas.style.position = "absolute";
+canvas.style.zIndex = 1;
+canvas.style.bottom = 0;
+canvas.style.right = 0;
+canvas.style.margin = "1rem";
+canvas.style.width = "4rem";
+canvas.style.height = "4rem";
+const ctx = canvas.getContext("2d");
+const launchProgressAnimation = function(duration) {
+  const start = Date.now();
+  window.requestAnimationFrame(function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!slideshowIsPaused) {
+      const time = Date.now() - start;
+      const angle = (time / duration - 1/4) * 2 * Math.PI;
+      const r1 = size / 2;
+      const r2 = r1 * 7/12;
+      const r3 = r2 + (r1 - r2) / 4;
+      ctx.fillStyle = pMin;
+      ctx.beginPath();
+      ctx.arc(r1, r1, r1, -Math.PI/2, angle, false);
+      ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
+      ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
+      ctx.fill();
+      ctx.closePath();
+      ctx.fillStyle = pMaj;
+      ctx.beginPath();
+      ctx.arc(r1, r1, r3, -Math.PI/2, angle, false);
+      ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
+      ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
+      ctx.fill();
+      ctx.closePath();
+      if (time < duration)
+        window.requestAnimationFrame(draw);
+    }
+  });
+};
+const drawPauseSymbol = function() {
+  window.requestAnimationFrame(function() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const margin = size / 4;
+    const barWidth = (size - 2 * margin) / 3;
+    ctx.fillStyle = pMin;
+    ctx.fillRect(margin, margin, barWidth, size-2*margin);
+    ctx.fillRect(size-margin-barWidth, margin, barWidth, size-2*margin);
+  });
 };
 
 // Display the media element of the current post.
@@ -206,64 +264,6 @@ window.addEventListener("resize", function() {
 		placeAndFitMediaElement(mediaElement);
 	}
 });
-
-// Update the progress indicator.
-const css = getComputedStyle(document.body);
-const pMaj = css.getPropertyValue("--primary-major");
-const pMin = css.getPropertyValue("--primary-minor");
-const sMaj = css.getPropertyValue("--secondary-major");
-const sMin = css.getPropertyValue("--secondary-minor");
-const size = 256;
-const canvas = document.body.appendChild(document.createElement("canvas"));
-canvas.width = size;
-canvas.height = size;
-canvas.style.position = "absolute";
-canvas.style.zIndex = 1;
-canvas.style.bottom = 0;
-canvas.style.right = 0;
-canvas.style.margin = "1rem";
-canvas.style.width = "4rem";
-canvas.style.height = "4rem";
-const ctx = canvas.getContext("2d");
-const launchProgressAnimation = function(duration) {
-	const start = Date.now();
-	window.requestAnimationFrame(function draw() {
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		if (!slideshowIsPaused) {
-			const time = Date.now() - start;
-			const angle = (time / duration - 1/4) * 2 * Math.PI;
-			const r1 = size / 2;
-      const r2 = r1 * 2/3;
-      const r3 = r2 + (r1 - r2) / 3;
-			ctx.fillStyle = pMin;
-			ctx.beginPath();
-			ctx.arc(r1, r1, r1, -Math.PI/2, angle, false);
-			ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
-			ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
-			ctx.fill();
-			ctx.closePath();
-			ctx.fillStyle = pMaj;
-			ctx.beginPath();
-			ctx.arc(r1, r1, r3, -Math.PI/2, angle, false);
-			ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
-			ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
-			ctx.fill();
-			ctx.closePath();
-      if (time < duration)
-        window.requestAnimationFrame(draw);
-		}
-	});
-};
-var drawPauseSymbol = function() {
-	window.requestAnimationFrame(function() {
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const margin = size / 4;
-    const barWidth = (size - 2 * margin) / 3;
-		ctx.fillStyle = pMin;
-		ctx.fillRect(margin, margin, barWidth, size-2*margin);
-		ctx.fillRect(size-margin-barWidth, margin, barWidth, size-2*margin);
-	});
-};
 
 // Run the slideshow.
 // First initialize some variables that will play a role in the interface with the slideshow:

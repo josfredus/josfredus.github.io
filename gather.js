@@ -21,52 +21,47 @@ Sorting.prototype.getPeriod = function() {
 	return this.period;
 };
 
+const https = s => s.slice(0, 5) === "http:" ? "https" + s.slice(4) : s;
+const imgRegExps = [/\.jpg$/, /\.jpeg$/, /\.png$/, /\.bmp$/, /\.gif$/];
+
 // Return a Promise that resolves when the media URL has been extracted from a given post's URL.
 // If the post does not yield a valid media, the Promise fails.
-var promiseExtractMediaURL = function(post) {
-	return new Promise(function(resolve, reject) {
-		var http2https = function(url) {
-			if (url.slice(0, 5) === "http:") {
-				return "https" + url.slice(4);
-			}
-			return url
-		};
-		if (/\.jpg$/.test(post.url) || /\.png$/.test(post.url) || /\.gif$/.test(post.url)) {
-			post.mediaURL = http2https(post.url);
-			post.mediaType = "image";
-			resolve(post);
-		}
-		else if (/\.gifv$/.test(post.url)) {
-			// https://i.imgur.com/<id>.gifv -> https://i.imgur.com/<id>.gif
-			post.mediaURL = http2https(post.url);
-			post.mediaType = "gifv";
-			resolve(post);
-		}
-		else if (/gfycat\.com\/[A-Za-z]+$/.test(post.url) ||
-				/gfycat\.com\/gifs\/detail\/[A-Za-z]+$/.test(post.url)) {
-			// https://gfycat.com/<id> -> https://giant.gfycat.com/<id>.webm
-			var xhr = new XMLHttpRequest();
-			xhr.responseType = "json";
-			xhr.open("GET", "https://api.gfycat.com/v1/gfycats/" + post.url.match(/\/([A-Za-z]+)$/)[1]);
-			xhr.addEventListener("error", function() { reject(post); });
-			xhr.addEventListener("abort", function() { reject(post); });
-			xhr.addEventListener("load", function() {
-				if (xhr.response && xhr.response.gfyItem && xhr.response.gfyItem.webmUrl) {
-					post.mediaURL = xhr.response.gfyItem.webmUrl;
-					post.mediaType = "video";
-					resolve(post);
-				}
-				else {
-					reject(post);
-				}
-			});
-			xhr.send();
-		}
-		else {
-			reject(post);
-		}
-	});
-};
+const extractContentSource = post => new Promise(function(resolve, reject) {
+  if (imgRegExps.some(re => re.test(post.url))) {
+    post.mediaURL = https(post.url);
+    post.mediaType = "image";
+    resolve(post);
+  }
+  else if (/\.gifv$/.test(post.url)) {
+    // https://i.imgur.com/<id>.gifv -> https://i.imgur.com/<id>.gif
+    post.mediaURL = https(post.url);
+    post.mediaType = "gifv";
+    resolve(post);
+  }
+  else if (/gfycat\.com\/[A-Za-z]+$/.test(post.url) ||
+      /gfycat\.com\/gifs\/detail\/[A-Za-z]+$/.test(post.url)) {
+    // https://gfycat.com/<id> -> https://giant.gfycat.com/<id>.webm
+    var xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", "https://api.gfycat.com/v1/gfycats/" + post.url.match(/\/([A-Za-z]+)$/)[1]);
+    xhr.addEventListener("error", function() { reject(post); });
+    xhr.addEventListener("abort", function() { reject(post); });
+    xhr.addEventListener("load", function() {
+      if (xhr.response && xhr.response.gfyItem && xhr.response.gfyItem.webmUrl) {
+        post.mediaURL = xhr.response.gfyItem.webmUrl;
+        post.mediaType = "video";
+        resolve(post);
+      }
+      else {
+        reject(post);
+      }
+    });
+    xhr.send();
+  }
+  else {
+    reject(post);
+  }
+});
 
 // A PostFetcher object is used to fetch the posts of a given subreddit with a given sorting.
 var PostFetcher = function(subredditName, sorting) {
@@ -101,7 +96,7 @@ PostFetcher.prototype.getNextPostPromise = function() {
 	var fetcher = this;
 	return new Promise(function(resolve, reject) {
 		if (fetcher.posts.length > 0) {
-			promiseExtractMediaURL(fetcher.posts.shift())
+			extractContentSource(fetcher.posts.shift())
 			.then(post => resolve(post))
 			.catch(post => fetcher.getNextPostPromise().then(resolve, reject));
 		}
