@@ -222,8 +222,8 @@ canvas.style.zIndex = 1;
 canvas.style.bottom = 0;
 canvas.style.right = 0;
 canvas.style.margin = "1rem";
-canvas.style.width = "4rem";
-canvas.style.height = "4rem";
+canvas.style.width = "20rem";
+canvas.style.height = "20rem";
 const ctx = canvas.getContext("2d");
 const launchProgressAnimation = function(duration) {
 	const start = Date.now();
@@ -232,19 +232,23 @@ const launchProgressAnimation = function(duration) {
 		if (!slideshowIsPaused) {
 			const time = Date.now() - start;
 			const angle = (time / duration - 1/4) * 2 * Math.PI;
-			const inner = size / 4;
+			const r1 = size / 2;
+      const r2 = r1 * 2/3;
+      const r3 = r2 + (r1 - r2) / 3;
 			ctx.fillStyle = pMin;
 			ctx.beginPath();
-			ctx.arc(size/2, size/2, size/2, -Math.PI/2, angle, false);
-			ctx.lineTo(size/2+Math.cos(angle)*inner, size/2+Math.sin(angle)*inner);
-			ctx.arc(size/2, size/2, inner, angle, -Math.PI/2, true);
+			ctx.arc(r1, r1, r1, -Math.PI/2, angle, false);
+			ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
+			ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
 			ctx.fill();
 			ctx.closePath();
-			ctx.strokeStyle = pMaj;
-			ctx.lineWidth = 2;
+			ctx.fillStyle = pMaj;
 			ctx.beginPath();
-			ctx.arc(size/2, size/2, inner, -Math.PI/2, angle, false);
-			ctx.stroke();
+			ctx.arc(r1, r1, r3, -Math.PI/2, angle, false);
+			ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
+			ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
+			ctx.fill();
+			ctx.closePath();
       if (time < duration)
         window.requestAnimationFrame(draw);
 		}
