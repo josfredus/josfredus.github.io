@@ -2,7 +2,6 @@ var launchSlideshow = function(settings) {
 
 document.body.style.overflow = "hidden";
 document.body.scroll = "no";
-document.body.style.margin = 0;
 
 // Create a PostFetcher for each subreddit passed by the settings.
 if (settings.subredditList.length === 0) {
@@ -99,29 +98,32 @@ var createSlideErrorPromise = function() {
 };
 
 // Display the title and the subreddit of the current post.
-var dataDiv = document.body.appendChild(document.createElement("div"));
+const dataDiv = document.body.appendChild(document.createElement("div"));
 dataDiv.style.zIndex = 2;
 dataDiv.style.position = "absolute";
-dataDiv.style.maxWidth = "75%";
 dataDiv.style.bottom = 0;
-dataDiv.style.left = "20px";
-var dataTitleP = dataDiv.appendChild(document.createElement("p"));
+dataDiv.style.left = 0;
+dataDiv.style.maxWidth = "75%";
+dataDiv.style.margin = "1em";
+const dataTitleP = dataDiv.appendChild(document.createElement("p"));
 dataTitleP.style.font = "x-large helvetica, sans-serif";
-var dataTitleA = dataTitleP.appendChild(document.createElement("a"));
+dataTitleP.style.margin = 0;
+const dataTitleA = dataTitleP.appendChild(document.createElement("a"));
 dataTitleA.target = "_blank";
 dataTitleA.rel = "noreferrer noopener";
 dataTitleA.className = "primaryLink";
-var dataSubP = dataDiv.appendChild(document.createElement("p"));
+const dataSubP = dataDiv.appendChild(document.createElement("p"));
 dataSubP.style.font = "medium verdana, sans-serif";
-var dataSubA = dataSubP.appendChild(document.createElement("a"));
+dataSubP.style.margin = 0;
+const dataSubA = dataSubP.appendChild(document.createElement("a"));
 dataSubA.target = "_blank";
 dataSubA.rel = "noreferrer noopener";
 dataSubA.className = "secondaryLink";
-var updatePostInfoDisplay = function(post) {
-	dataTitleA.textContent = post.title;
-	dataTitleA.href = post.link;
-	dataSubA.textContent = "/r/" + post.subreddit;
-	dataSubA.href = "https://www.reddit.com/r/" + post.subreddit;
+const displayContentData = function(cnt) {
+	dataTitleA.textContent = cnt.title;
+	dataTitleA.href = cnt.link;
+	dataSubA.textContent = "/r/" + cnt.subreddit;
+	dataSubA.href = "https://www.reddit.com/r/" + cnt.subreddit;
 };
 
 // Display the media element of the current post.
@@ -206,6 +208,7 @@ window.addEventListener("resize", function() {
 });
 
 // Update the progress indicator.
+/*
 var colorPrimaryMajor = getComputedStyle(document.body).getPropertyValue("--primary-major");
 var colorSecondaryMinor = getComputedStyle(document.body).getPropertyValue("--secondary-minor");
 var progressCanvas = document.body.appendChild(document.createElement("canvas"));
@@ -213,27 +216,40 @@ progressCanvas.id = "progressCanvas";
 progressCanvas.width = 100;
 progressCanvas.height = 100;
 var ctx = progressCanvas.getContext("2d");
-var launchProgressAnimation = function(slideDuration) {
-	var slideStartEpoch = Date.now();
+*/
+const css = getComputedStyle(document.body);
+const pMaj = css.getPropertyValue("--primary-major");
+const sMin = css.getPropertyValue("--secondary-minor");
+const size = 100;
+const canvas = document.body.appendChild(document.createElement("canvas"));
+canvas.width = size;
+canvas.height = size;
+canvas.style.position = "absolute";
+canvas.style.zIndex = 1;
+canvas.style.bottom = 0;
+canvas.style.right = 0;
+canvas.style.margin = "1em";
+const ctx = canvas.getContext("2d");
+const launchProgressAnimation = function(duration) {
+	const start = Date.now();
 	window.requestAnimationFrame(function draw() {
-		ctx.clearRect(0, 0, progressCanvas.width, progressCanvas.height);
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		if (!slideshowIsPaused) {
-			var elapsedTime = Date.now() - slideStartEpoch;
-			var progressAngle = (elapsedTime / slideDuration * 4 - 1) * Math.PI / 2;
-			var outerRadius = progressCanvas.width * 2 / 5;
-			var innerRadius = progressCanvas.width / 4;
-			ctx.fillStyle = colorSecondaryMinor;
+			const time = Date.now() - start;
+			const angle = (time / duration - 1/4) * 2 * Math.PI;
+			const outer = size * 2/5;
+			const inner = size / 4;
+			ctx.fillStyle = sMin;
 			ctx.beginPath();
-			ctx.arc(progressCanvas.width / 2, progressCanvas.height / 2, outerRadius, -Math.PI / 2, progressAngle, false);
-			ctx.lineTo(progressCanvas.width / 2 + Math.cos(progressAngle) * innerRadius,
-				progressCanvas.height / 2 + Math.sin(progressAngle) * innerRadius);
-			ctx.arc(progressCanvas.width / 2, progressCanvas.height / 2, innerRadius, progressAngle, -Math.PI / 2, true);
+			ctx.arc(size/2, size/2, outer, -Math.PI/2, angle, false);
+			ctx.lineTo(size/2+Math.cos(angle)*inner, size/2+Math.sin(angle)*inner);
+			ctx.arc(size/2, size/2, inner, angle, -Math.PI/2, true);
 			ctx.fill();
 			ctx.closePath();
-			ctx.strokeStyle = colorPrimaryMajor;
+			ctx.strokeStyle = pMaj;
 			ctx.lineWidth = 2;
 			ctx.beginPath();
-			ctx.arc(progressCanvas.width / 2, progressCanvas.height / 2, outerRadius, -Math.PI / 2, progressAngle, false);
+			ctx.arc(size/2, size/2, outer, -Math.PI/2, angle, false);
 			ctx.stroke();
 			window.requestAnimationFrame(draw);
 		}
@@ -284,7 +300,7 @@ return fetchers[indexGenerator.next().value].getNextPostPromise().then(registerP
 		preloadedNextPostPromise = fetchers[indexGenerator.next().value].getNextPostPromise();
 		preloadNextPostPromise = false;
 	}
-	updatePostInfoDisplay(post);
+	displayContentData(post);
 	promiseLoadMediaElement(post).then(function(slideDuration) {
 		if (!slideshowIsPaused) {
 			launchProgressAnimation(slideDuration);

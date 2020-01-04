@@ -6,6 +6,7 @@
 	--background-color: #ffffff;
 }
 body {
+  margin: 0;
 	background-color: var(--background-color);
 }
 .primaryLink {
@@ -21,41 +22,6 @@ body {
 }
 .secondaryLink:hover, .secondaryLink:active {
 	color: var(--secondary-minor);
-}
-#postInfoDisplayBlock {
-	z-index: 2;
-	position: absolute;
-	max-width: 75%;
-	bottom: 0;
-	left: 20px;
-}
-#postInfoDisplayTitleP {
-	font: x-large helvetica, sans-serif;
-	margin-block-end: 0;
-}
-#postInfoDisplayTitleLink {
-	text-decoration: none;
-	color: var(--primary-major);
-}
-#postInfoDisplayTitleLink:hover {
-	color: var(--primary-minor);
-}
-#postInfoDisplaySubredditP {
-	font: medium verdana, sans-serif;
-	margin-block-start: 0;
-}
-#postInfoDisplaySubredditLink {
-	text-decoration: none;
-	color: var(--secondary-major);
-}
-#postInfoDisplaySubredditLink:hover {
-	color: var(--secondary-minor);
-}
-#progressCanvas {
-	position: absolute;
-	z-index: 1;
-	right: 0;
-	bottom: 0;
 }
 #settingsDiv {
 	margin-top: 10%;
