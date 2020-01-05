@@ -14,5 +14,5 @@ const runTheShow = setup => new Promise((res, rej) => {
 });
 
 // window.onload = () => setUpTheShow().then(launchSlideshow).catch(console.log);
-// window.onload = () => runTheShow({});
-window.onload = () => setUpTheShow().then(console.log, console.log);
+window.onload = () => runTheShow({});
+// window.onload = () => setUpTheShow().then(console.log, console.log);
