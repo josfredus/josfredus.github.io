@@ -58,6 +58,7 @@ const ContentExtractor = function(subreddit, sorting="hot", period="") {
   this.barren = false;
   this.consecutiveEmptyListings = 0;
 };
+
 ContentExtractor.prototype.getNextContent =
 function() { return (that => new Promise(function(res, rej) {
   const subIsExhausted = function() {

@@ -1,3 +1,126 @@
+const createDataDisplay = function() {
+  const dataDiv = document.body.appendChild(document.createElement("div"));
+  dataDiv.style.zIndex = 2;
+  dataDiv.style.position = "absolute";
+  dataDiv.style.bottom = 0;
+  dataDiv.style.left = 0;
+  dataDiv.style.maxWidth = "75%";
+  dataDiv.style.margin = "1rem";
+  const dataTitleP = dataDiv.appendChild(document.createElement("p"));
+  dataTitleP.style.font = "1.5em helvetica, sans-serif";
+  dataTitleP.style.margin = 0;
+  const dataTitleA = dataTitleP.appendChild(document.createElement("a"));
+  dataTitleA.target = "_blank";
+  dataTitleA.rel = "noreferrer noopener";
+  dataTitleA.className = "primaryLink";
+  const dataSubP = dataDiv.appendChild(document.createElement("p"));
+  dataSubP.style.font = "1em verdana, sans-serif";
+  dataSubP.style.margin = 0;
+  const dataSubA = dataSubP.appendChild(document.createElement("a"));
+  dataSubA.target = "_blank";
+  dataSubA.rel = "noreferrer noopener";
+  dataSubA.className = "secondaryLink";
+  return {
+    set: function(content) {
+      dataTitleA.textContent = content.title;
+      dataTitleA.href = content.permalink;
+      dataSubA.textContent = "/r/" + content.subreddit;
+      dataSubA.href = "https://www.reddit.com/r/" + content.subreddit;
+    }
+  };
+};
+
+const createTimeDisplay = function(size=256) {
+  let progress = 0;
+  let pause = false;
+  let number = null;
+  const css = getComputedStyle(document.body);
+  const pMaj = css.getPropertyValue("--primary-major");
+  const pMin = css.getPropertyValue("--primary-minor");
+  const sMaj = css.getPropertyValue("--secondary-major");
+  const sMin = css.getPropertyValue("--secondary-minor");
+  const canvas = document.body.appendChild(document.createElement("canvas"));
+  canvas.width = size;
+  canvas.height = size;
+  canvas.style.position = "absolute";
+  canvas.style.zIndex = 1;
+  canvas.style.bottom = 0;
+  canvas.style.right = 0;
+  canvas.style.margin = "1rem";
+  canvas.style.width = "5rem";
+  canvas.style.height = "5rem";
+  const ctx = canvas.getContext("2d");
+  const drawProgress = function() {
+    const angle = (progress - 1/4) * 2 * Math.PI;
+    const r1 = size / 2;
+    const r2 = r1 * 7/12;
+    const r3 = r2 + (r1 - r2) / 4;
+    ctx.fillStyle = pMin;
+    ctx.beginPath();
+    ctx.arc(r1, r1, r1, -Math.PI/2, angle, false);
+    ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
+    ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
+    ctx.fill();
+    ctx.closePath();
+    ctx.fillStyle = pMaj;
+    ctx.beginPath();
+    ctx.arc(r1, r1, r3, -Math.PI/2, angle, false);
+    ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
+    ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
+    ctx.fill();
+    ctx.closePath();
+  };
+  const drawPause = function() {
+    const margin = size / 4;
+    const barWidth = (size - 2 * margin) / 3;
+    ctx.fillStyle = pMin;
+    ctx.fillRect(margin, margin, barWidth, size-2*margin);
+    ctx.fillRect(size-margin-barWidth, margin, barWidth, size-2*margin);
+  };
+  const drawNumber = function() {
+    ctx.fillStyle = pMaj;
+    ctx.font = "" + Math.round(size * 5/12) + "px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("" + number, size / 2, size / 2);
+  };
+  return {
+    set: (elapsed, dur) => progress = Math.min(elapsed / dur, 1),
+    pause: () => pause = true,
+    resume: () => pause = false,
+    setNumber: n => number = n,
+    removeNumber: () => number = null,
+    draw: function() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      (pause ? drawPause : drawProgress)();
+      if (number !== null)
+        drawNumber();
+    }
+  };
+};
+
+const createMedia = function() {
+  let elm = null;
+  const showImage = function(source) {
+    elm.src = source
+  };
+  const showVideo = function(sources) {
+    sources.forEach(function(src) {
+      const srcElm = document.createElement("source");
+      srcElm.src = src;
+      elm.appendChild(srcElm);
+    });
+    elm.controls = true;
+  };
+  return {
+    set: function(content) {
+      document.body.removeChild(elm);
+      elm = document.body.createElement(content.type);
+      (content.type === "img" ? showImage : showVideo)(content.src);
+    }
+  };
+};
+
 var launchSlideshow = function(settings) {
 
 document.body.style.overflow = "hidden";
