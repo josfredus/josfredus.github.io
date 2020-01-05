@@ -82,13 +82,13 @@ const createBtnRow = function(sets, def=0) {
 
 const setUpTheShow = () => new Promise(function(res, rej) {
   document.addEventListener("touchstart", function(evt) {
-    document.getElementById("errorLog").textContent = "start " + evt.touches[0].screenX;
+    document.getElementById("errorLog").textContent = "start " + evt.touches[0].clientX + " / " + window.innerWidth;
   }, false);
   document.addEventListener("touchmove", function(evt) {
-    document.getElementById("errorLog").textContent = "move " + evt.touches[0].screenX;
+    document.getElementById("errorLog").textContent = "move " + evt.touches[0].clientX + " / " + window.innerWidth;
   }, false);
   document.addEventListener("touchend", function(evt) {
-    document.getElementById("errorLog").textContent = "end " + evt.touches[0].screenX;
+    document.getElementById("errorLog").textContent = "end " + evt.touches[0].clientX + " / " + window.innerWidth;
   }, false);
   const sortingRow = createBtnRow([
     ["hot", "Hot"],
