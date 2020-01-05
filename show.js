@@ -100,7 +100,7 @@ const createTimeDisplay = function(size=256) {
 };
 
 const createMedia = function() {
-  let elm = null;
+  let elm = document.body.appendChild(document.createElement("div"));
   const showImage = function(source) {
     elm.src = source
   };
