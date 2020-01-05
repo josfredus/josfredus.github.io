@@ -1,5 +1,5 @@
 const runTheShow = setup => new Promise((res, rej) => {
-  // document.body.style.overflow = "hidden";
+  document.body.style.overflow = "visible";
   // document.body.scroll = "no";
   document.body.style.margin = 0 // remove after testing it's in css already
   const dataDisplay = createDataDisplay();
