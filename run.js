@@ -91,11 +91,11 @@ const nextActEvent = () => new Promise((res, rej) => {
     }
   });
   let x = null;
-  window.addEventListener("touchstart", function cb(evt) {
+  document.addEventListener("touchstart", function cb(evt) {
     window.removeEventListener("touchstart", cb);
     x = evt.touches[0].screenX;
   });
-  window.addEventListener("touchend", function cb(evt) {
+  document.addEventListener("touchend", function cb(evt) {
     window.removeEventListener("touchend", cb);
     if (evt.touches[0].screenX < x) res("nextAct");
   });

@@ -81,10 +81,10 @@ const createBtnRow = function(sets, def=0) {
 };
 
 const setUpTheShow = () => new Promise(function(res, rej) {
-  window.addEventListener("touchstart", function(evt) {
+  document.addEventListener("touchstart", function(evt) {
     document.getElementById("errorLog").textContent = "start " + evt.touches[0].screenX;
   });
-  window.addEventListener("touchend", function(evt) {
+  document.addEventListener("touchend", function(evt) {
     document.getElementById("errorLog").textContent = "end " + evt.touches[0].screenX;
   });
   const sortingRow = createBtnRow([
