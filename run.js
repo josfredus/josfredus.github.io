@@ -1,6 +1,6 @@
 const runTheShow = setup => new Promise((res, rej) => {
-  document.body.style.overflow = "hidden";
-  document.body.scroll = "no";
+  // document.body.style.overflow = "hidden";
+  // document.body.scroll = "no";
   document.body.style.margin = 0 // remove after testing it's in css already
   const dataDisplay = createDataDisplay();
   const timeDisplay = createTimeDisplay();
@@ -10,7 +10,10 @@ const runTheShow = setup => new Promise((res, rej) => {
   timeDisplay.setNumber(28);
   timeDisplay.draw();
   const xtr = new ContentExtractor("aww");
-  xtr.getNextContent().then(media.set).catch(console.log("BARREN"));
+  xtr.getNextContent().then(content => {
+    media.set(content);
+    dataDisplay.set(content);
+  }).catch(console.log("BARREN"));
 });
 
 // window.onload = () => setUpTheShow().then(launchSlideshow).catch(console.log);
