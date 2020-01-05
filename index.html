@@ -11,9 +11,30 @@
     <script type="text/javascript" src="/show.js"></script>
     <script type="text/javascript" src="/setup.js"></script>
     <script type="text/javascript" src="/run.js"></script>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.png" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script type="text/javascript" src="gather.js"></script>
+    <script type="text/javascript" src="show.js"></script>
+    <script type="text/javascript" src="setup.js"></script>
+    <script type="text/javascript" src="run.js"></script>
   </head>
   <body>
-    <div id="settingsDiv">
+    <div id="settings">
+      <input id="subs" autofocus placeholder="pics gifs aww NatureIsFuckingLit" spellcheck="false">
+      <div id="sorting"></div>
+      <div id="period"></div>
+      <p id="afterPeriod">Skip every <input id="duration" type="number" min="1" step="1" value="30"> seconds</p>
+      <button id="shuffle" class="onbtn">Shuffle subreddits every round</button>
+      <div id="loop"></div>
+      <p>
+        <button id="reverse" class="offbtn">Climb up the listings</button>
+        starting from #<input id="reverseStart" type="number" min="1" max="100" step="1" value="10"> (1-100)
+        <button id="reverseLoop" class="onbtn">(Loop after reaching top)</button>
+      </p>
+      <button id="start" class="onbtn">Show Must Go On!</button>
+      <p id="errorLog"></p>
+    </div>
+    <!--<div id="settingsDiv">
       <div id="firstRowDiv">
         <p>
           Enter the names of the subreddits of your choice, separate them by one space &#9251; :</p>
@@ -57,6 +78,6 @@
           <br>Press Backspace or RightArrow to go back to the previous slide.
         </p>
       </div>
-    </div>
+    </div>-->
   </body>
 </html>

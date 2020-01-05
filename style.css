@@ -23,6 +23,12 @@ body {
 .secondaryLink:hover, .secondaryLink:active {
 	color: var(--secondary-minor);
 }
+.onbtn {
+  background-color: var(--primary-major);
+}
+.offbtn {
+  background-color: var(--secondary-major);
+}
 #settingsDiv {
   margin-top: 10%;
   margin-left: 25%;

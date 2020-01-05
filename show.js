@@ -30,8 +30,7 @@ const createDataDisplay = function() {
   };
 };
 
-const createTimeDisplay = function() {
-  let size = 0;
+const createTimeDisplay = function(size=256) {
   let progress = 0;
   let pause = false;
   let number = null;
@@ -41,18 +40,15 @@ const createTimeDisplay = function() {
   const sMaj = css.getPropertyValue("--secondary-major");
   const sMin = css.getPropertyValue("--secondary-minor");
   const canvas = document.body.appendChild(document.createElement("canvas"));
+  canvas.width = size;
+  canvas.height = size;
   canvas.style.position = "absolute";
   canvas.style.zIndex = 1;
   canvas.style.bottom = 0;
   canvas.style.right = 0;
   canvas.style.margin = "1rem";
-  const resize = function() {
-    const little = Math.min(window.innerWidth, window.innerHeight);
-    size = Math.round(little / 5);
-    canvas.width = size;
-    canvas.height = size;
-  }
-  resize();
+  canvas.style.width = "5rem";
+  canvas.style.height = "5rem";
   const ctx = canvas.getContext("2d");
   const drawProgress = function() {
     const angle = (progress - 1/4) * 2 * Math.PI;
@@ -88,22 +84,18 @@ const createTimeDisplay = function() {
     ctx.textBaseline = "middle";
     ctx.fillText("" + number, size / 2, size / 2);
   };
-  const draw = function() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    (pause ? drawPause : drawProgress)();
-    if (number !== null)
-      drawNumber();
-  };
-  window.addEventListener("resize", function() {
-    resize();
-    draw();
-  });
   return {
     set: (elapsed, dur) => progress = Math.min(elapsed / dur, 1),
+    pause: () => pause = true,
     resume: () => pause = false,
     setNumber: n => number = n,
     removeNumber: () => number = null,
-    draw: draw
+    draw: function() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      (pause ? drawPause : drawProgress)();
+      if (number !== null)
+        drawNumber();
+    }
   };
 };
 
