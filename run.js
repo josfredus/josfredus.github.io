@@ -28,12 +28,18 @@ const createProgramme = function(setup) {
   let current = -1;
   const iGen = indexGen(setup.xtrs.length, setup.shuffle);
   const next = () => new Promise((res, rej) => {
+    console.log(contents);
+    console.log(setup.xtrs);
     current += 1;
     if (contents.length === 0 || current === contents.length) 
       setup.xtrs[iGen.next().value].getNextContent().then(remember)
         .then(res, rej);
     else
       res(contents[current]);
+  });
+  const prev = () => new Promise((res, rej) => {
+    current -= 1;
+    res(contents[current]);
   });
   const reverse = () => new Promise((res, rej) => {
     const getTopN = xtr => new Promise((res2, rej2) => {
@@ -58,7 +64,7 @@ const createProgramme = function(setup) {
     });
     Promise.all(setup.xtrs.map(getTopN)).then(function(tops) {
       tops.forEach(function(t, i) {
-        setup.xtrs[i].exhausted = true;
+        setup.xtrs[i].frozen = true;
         while (setup.xtrs[i].contents.length) setup.xtrs[i].contents.pop();
         t.forEach(content => setup.xtrs[i].contents.push(content));
       });
@@ -70,9 +76,12 @@ const createProgramme = function(setup) {
     contents: () => contents,
     current: () => current === -1 ? null : contents[current],
     next: next,
+    prev: prev,
     gather: gather,
-    ended: () => setup.reverse && !setup.reverseLoop &&
-      current >= setup.xtrs.length * setup.reverseStart - 1
+    isEnd: () => setup.reverse && !setup.reverseLoop &&
+      current >= setup.xtrs.length * setup.reverseStart - 1,
+    isStart: () => current <= 0,
+    reversePosition: () => setup.reverseStart - Math.floor(current / setup.xtrs.length) % setup.reverseStart
   };
 };
 
@@ -89,6 +98,15 @@ const nextActEvent = () => new Promise((res, rej) => {
   });
 });
 
+const prevActEvent = () => new Promise((res, rej) => {
+  window.addEventListener("keyup", function cb(event) {
+    if (["Backspace"].indexOf(event.key) !== -1) {
+      window.removeEventListener("keyup", cb);
+      res("prevAct");
+    }
+  });
+});
+
 const runTheShow = setup => new Promise((res, rej) => {
   document.body.style.overflow = "visible";
   document.body.removeChild(document.getElementById("settings"));
@@ -98,11 +116,19 @@ const runTheShow = setup => new Promise((res, rej) => {
   const media = createMedia();
   const act = content => new Promise((res, rej) => {
     timeDisplay.set(0, setup.actDuration);
+    if (setup.reverse) timeDisplay.setNumber(programme.reversePosition());
     timeDisplay.draw();
     media.set(content);
     dataDisplay.set(content);
-    if (!programme.ended())
-      nextActEvent().then(programme.next).then(act);
+    const events = [];
+    if (!programme.isEnd()) events.push(nextActEvent());
+    if (!programme.isStart()) events.push(prevActEvent());
+    Promise.race(events).then(function(name) {
+      if (name === "nextAct")
+        return programme.next().then(act);
+      if (name === "prevAct")
+        return programme.prev().then(act);
+    });
   });
   programme.gather().then(programme.next).then(act).then(res, rej);
 });

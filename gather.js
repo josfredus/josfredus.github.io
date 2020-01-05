@@ -58,6 +58,7 @@ const ContentExtractor = function(sub, pre=5, sorting="hot", period="") {
   this.i = null;
   this.barren = false;
   this.consecutiveEmptyListings = 0;
+  this.frozen = false;
 };
 
 ContentExtractor.prototype.loadNextContent =
@@ -67,7 +68,7 @@ function() { return (that => new Promise((res, rej) => {
     that.barren = that.contents.length === 0;
     that.loadNextContent().then(res, rej);
   };
-  if (that.barren || that.exhausted)
+  if (that.barren || that.exhausted || that.frozen)
     res();
   else if (that.contents.length > (that.i===null?-1:that.i) + that.preload)
     res();
@@ -75,6 +76,10 @@ function() { return (that => new Promise((res, rej) => {
     const post = that.listing.shift();
     extractContentSource(post)
     .then(source => {
+      if (that.frozen) {
+        res();
+        return;
+      }
       const content = {
         permalink: "https://www.reddit.com" + post.permalink,
         title: post.title,
@@ -99,7 +104,7 @@ function() { return (that => new Promise((res, rej) => {
       that.after);
     r.addEventListener("load", function() {
       if (r.response.data && r.response.data.children &&
-          r.response.data.children.length) {
+          r.response.data.children.length && !that.frozen) {
         that.listing = that.listing.concat(
           r.response.data.children.map(child => child.data));
         that.after = that.listing.slice(-1)[0].name;
@@ -121,7 +126,7 @@ ContentExtractor.prototype.getNextContent =
 function() { return (that => new Promise((res, rej) => {
   if (that.barren)
     res();
-  else if (that.exhausted) {
+  else if (that.exhausted || that.frozen) {
     that.i = that.i === null ? 0 : that.i + 1;
     that.i = that.i >= that.contents.length ? 0 : that.i;
     res(that.contents[that.i]);
