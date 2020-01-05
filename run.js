@@ -28,8 +28,6 @@ const createProgramme = function(setup) {
   let current = -1;
   const iGen = indexGen(setup.xtrs.length, setup.shuffle);
   const next = () => new Promise((res, rej) => {
-    console.log(contents);
-    console.log(setup.xtrs);
     current += 1;
     if (contents.length === 0 || current === contents.length) 
       setup.xtrs[iGen.next().value].getNextContent().then(remember)
@@ -92,9 +90,14 @@ const nextActEvent = () => new Promise((res, rej) => {
       res("nextAct");
     }
   });
-  window.addEventListener("touchstart", function cb(event) {
+  let x = null;
+  window.addEventListener("touchstart", function cb(evt) {
     window.removeEventListener("touchstart", cb);
-    res("nextAct");
+    x = evt.touches[0].screenX;
+  });
+  window.addEventListener("touchend", function cb(evt) {
+    window.removeEventListener("touchend", cb);
+    if (evt.touches[0].screenX < x) res("nextAct");
   });
 });
 
@@ -117,6 +120,7 @@ const runTheShow = setup => new Promise((res, rej) => {
   const act = content => new Promise((res, rej) => {
     timeDisplay.set(0, setup.actDuration);
     if (setup.reverse) timeDisplay.setNumber(programme.reversePosition());
+    (programme.isEnd() ? timeDisplay.pause : timeDisplay.resume)();
     timeDisplay.draw();
     media.set(content);
     dataDisplay.set(content);
