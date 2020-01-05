@@ -87,6 +87,9 @@ const setUpTheShow = () => new Promise(function(res, rej) {
   document.addEventListener("touchmove", function(evt) {
     document.getElementById("errorLog").textContent = "move " + evt.touches[0].screenX;
   }, false);
+  document.addEventListener("touchend", function(evt) {
+    document.getElementById("errorLog").textContent = "end " + evt.touches[0].screenX;
+  }, false);
   const sortingRow = createBtnRow([
     ["hot", "Hot"],
     ["new", "New"],
