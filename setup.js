@@ -157,34 +157,31 @@ const setUpTheShow = () => new Promise(function(res, rej) {
         if (part !== "")
           xtrs.push(new ContentExtractor(part, 5, sorting, period))
       });
-      let itWorked = false;
-      xtrs.forEach(function(xtr) {
-        xtr.loadNextContent().then(function() {
-          if (!itWorked) {
-            itWorked = true;
-            res({
-              xtrs: xtrs,
-              actDuration: duration,
-              shuffle: shuffleTgl.isOn(),
-              loop: loopRow.getValue(),
-              reverse: reverseTgl.isOn(),
-              reverseStart: rvrsStrt,
-              reverseLoop: rvsLoopTgl.isOn()
-            });
-          }
-        }).catch(function() {
-          let fullBarren = true;
-          for (let i = 0; i < xtrs.length; i++)
-            if (!xtrs[i].barren)
-              fullBarren = false;
-          if (fullBarren) {
-            document.getElementById("start").disabled = false;
-            processing = false;
-            document.getElementById("errorLog").textContent = "It looks " +
-              "like the subreddits you requested are all barren of " +
-              "pictures and videos. We cannot run the show!";
-          }
-        });
+      Promise.all(xtrs.map(xtr => xtr.loadNextContent())).then(nothing => {
+        let i = 0;
+        while (i < xtrs.length) {
+          if (xtrs[i].barren)
+            xtrs.splice(i, 1);
+          else
+            i++;
+        }
+        if (xtrs.length)
+          res({
+            xtrs: xtrs,
+            actDuration: duration,
+            shuffle: shuffleTgl.isOn(),
+            loop: loopRow.getValue(),
+            reverse: reverseTgl.isOn(),
+            reverseStart: rvrsStrt,
+            reverseLoop: rvsLoopTgl.isOn()
+          });
+        else {
+          document.getElementById("start").disabled = false;
+          processing = false;
+          document.getElementById("errorLog").textContent = "It looks " +
+            "like the subreddits you requested are all barren of " +
+            "pictures and videos. We cannot run the show!";
+        }
       });
     }
     if (!valid) {

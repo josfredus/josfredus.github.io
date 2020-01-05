@@ -67,9 +67,7 @@ function() { return (that => new Promise((res, rej) => {
     that.barren = that.contents.length === 0;
     that.loadNextContent().then(res, rej);
   };
-  if (that.barren)
-    rej();
-  else if (that.exhausted)
+  if (that.barren || that.exhausted)
     res();
   else if (that.contents.length > (that.i===null?-1:that.i) + that.preload)
     res();
@@ -122,7 +120,7 @@ function() { return (that => new Promise((res, rej) => {
 ContentExtractor.prototype.getNextContent =
 function() { return (that => new Promise((res, rej) => {
   if (that.barren)
-    rej();
+    res();
   else if (that.exhausted) {
     that.i = that.i === null ? 0 : that.i + 1;
     that.i = that.i >= that.contents.length ? 0 : that.i;
