@@ -51,24 +51,21 @@ const createTimeDisplay = function(size=256) {
   canvas.style.height = "5rem";
   const ctx = canvas.getContext("2d");
   const drawProgress = function() {
-    const angle = (progress - 1/4) * 2 * Math.PI;
     const r1 = size / 2;
     const r2 = r1 * 7/12;
     const r3 = r2 + (r1 - r2) / 4;
-    ctx.fillStyle = pMin;
-    ctx.beginPath();
-    ctx.arc(r1, r1, r1, -Math.PI/2, angle, false);
-    ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
-    ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
-    ctx.fill();
-    ctx.closePath();
-    ctx.fillStyle = pMaj;
-    ctx.beginPath();
-    ctx.arc(r1, r1, r3, -Math.PI/2, angle, false);
-    ctx.lineTo(r1 + Math.cos(angle) * r2, r1 + Math.sin(angle) * r2);
-    ctx.arc(r1, r1, r2, angle, -Math.PI/2, true);
-    ctx.fill();
-    ctx.closePath();
+    const r4 = r2 + (r1 - r2) / 2;
+    const f = function(color, a, b, angle) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(r1, r1, a, -Math.PI/2, angle, false);
+      ctx.lineTo(r1 + Math.cos(angle) * b, r1 + Math.sin(angle) * b);
+      ctx.arc(r1, r1, b, angle, -Math.PI/2, true);
+      ctx.fill();
+    };
+    f(sMin, r1, r2, (Math.pow(progress, 2) - 1/4) * 2 * Math.PI);
+    f(pMin, r4, r2, (Math.pow(progress, 1.5) - 1/4) * 2 * Math.PI);
+    f(pMaj, r3, r2, (progress - 1/4) * 2 * Math.PI);
   };
   const drawPause = function() {
     const margin = size / 4;
@@ -111,6 +108,7 @@ const createMedia = function() {
       elm.appendChild(srcElm);
     });
     elm.controls = true;
+    elm.play();
   };
   return {
     set: function(content) {

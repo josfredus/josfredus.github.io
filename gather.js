@@ -46,38 +46,33 @@ const extractContentSource = post => new Promise((res, rej) => {
     rej(post);
 });
 
-const ContentExtractor = function(subreddit, sorting="hot", period="") {
-  this.subreddit = subreddit;
+const ContentExtractor = function(sub, pre=5, sorting="hot", period="") {
+  this.subreddit = sub;
+  this.preload = pre;
   this.sorting = sorting;
   this.period = period;
-  this.contentList = [];
+  this.contents = [];
   this.listing = [];
   this.after = "";
   this.exhausted = false;
-  this.lastContentIndex = 0;
+  this.i = null;
   this.barren = false;
   this.consecutiveEmptyListings = 0;
 };
 
-ContentExtractor.prototype.getNextContent =
-function() { return (that => new Promise(function(res, rej) {
+ContentExtractor.prototype.loadNextContent =
+function() { return (that => new Promise((res, rej) => {
   const subIsExhausted = function() {
     that.exhausted = true;
-    if (that.contentList.length)
-      res(that.contentList[0]);
-    else {
-      that.barren = true;
-      rej();
-    }
+    that.barren = that.contents.length === 0;
+    that.loadNextContent().then(res, rej);
   };
   if (that.barren)
     rej();
-  else if (that.exhausted) {
-    that.lastContentIndex = that.lastContentIndex + 1;
-    if (that.lastContentIndex === that.contentList.length)
-      that.lastContentIndex = 0;
-    res(that.contentList[that.lastContentIndex]);
-  }
+  else if (that.exhausted)
+    res();
+  else if (that.contents.length > (that.i===null?-1:that.i) + that.preload)
+    res();
   else if (that.listing.length) {
     const post = that.listing.shift();
     extractContentSource(post)
@@ -90,11 +85,12 @@ function() { return (that => new Promise(function(res, rej) {
         src: source.src
       };
       that.consecutiveEmptyListings = 0;
-      that.contentList.push(content);
-      res(content);
+      that.contents.push(content);
+      that.loadNextContent();
+      res();
     })
     .catch(() => {
-      that.getNextContent().then(res, rej);
+      that.loadNextContent().then(res, rej);
     });
   }
   else if (that.consecutiveEmptyListings < 5) {
@@ -110,7 +106,7 @@ function() { return (that => new Promise(function(res, rej) {
           r.response.data.children.map(child => child.data));
         that.after = that.listing.slice(-1)[0].name;
         that.consecutiveEmptyListings += 1;
-        that.getNextContent().then(res, rej);
+        that.loadNextContent().then(res, rej);
       }
       else
         subIsExhausted();
@@ -121,4 +117,28 @@ function() { return (that => new Promise(function(res, rej) {
   }
   else
     subIsExhausted();
+}))(this)};
+
+ContentExtractor.prototype.getNextContent =
+function() { return (that => new Promise((res, rej) => {
+  if (that.barren)
+    rej();
+  else if (that.exhausted) {
+    that.i = that.i === null ? 0 : that.i + 1;
+    that.i = that.i >= that.contents.length ? 0 : that.i;
+    res(that.contents[that.i]);
+  }
+  else if (that.i === null && that.contents.length) {
+    that.i = 0;
+    res(that.contents[that.i]);
+    that.loadNextContent();
+  }
+  else if (!that.contents.length || that.i >= that.contents.length - 1) {
+    that.loadNextContent().then(() => that.getNextContent()).then(res, rej);
+  }
+  else {
+    that.i += 1;
+    res(that.contents[that.i]);
+    that.loadNextContent();
+  }
 }))(this)};
