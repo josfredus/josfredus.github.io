@@ -1,14 +1,3 @@
-/* LIST OF SETTINGS
-subreddit list
-sorting: hot, top, new, rising, controversial
-period (for hot, controversial): hour, day, week, month, year, all
-act duration
-shuffle subreddit every round (advanced)
-video loop behavior: underloop, clip, overloop (advanced)
-starting from the bottom now we here (advanced)
-show must go on button
-*/
-
 const makeBtnToggle = function(btnElm) {
   let on = true;
   let onToggle = () => null;
@@ -191,8 +180,12 @@ const setUpTheShow = () => new Promise(function(res, rej) {
     }
   };
   document.getElementById("start").addEventListener("click", letsGetItOn);
-  window.addEventListener("keyup", function(event) {
-    if (event.key === "Enter")
+  const okBoomer = evt => { if(evt.key === "Enter") evt.preventDefault(); };
+  document.getElementById("shuffle").addEventListener("keydown", okBoomer);
+  document.getElementById("reverse").addEventListener("keydown", okBoomer);
+  document.getElementById("reverseLoop").addEventListener("keydown", okBoomer);
+  window.addEventListener("keyup", function(evt) {
+    if (evt.key === "Enter")
       letsGetItOn();
   });
 });
