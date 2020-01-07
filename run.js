@@ -46,14 +46,38 @@ const prevActEvent = () => new Promise((res, rej) => {
   });
 });
 
+const createEventStack = function() {
+  const nextEvents = [];
+  const prevEvents = [];
+  window.addEventListener("keyup", function(evt) {
+    if ([" ", "Spacebar", "ArrowRight", "Right"].indexOf(evt.key) !== -1) {
+      nextEvents.push(evt.timeStamp);
+      nextEvents.sort();
+    }
+    else if (["Backspace", "ArrowLeft", "Left"].indexOf(evt.key) !== -1) {
+      prevEvents.push(evt.timeStamp);
+      prevEvents.sort();
+    }
+  });
+  window.addEventListener("touchstart", function(evt) {
+    nextEvents.push(evt.timeStamp);
+    nextEvents.sort();
+  }, false);
+  return {
+    test: () => nextEvents.length
+  };
+};
+
 const runTheShow = setup => new Promise((res, rej) => {
   document.body.style.overflow = "hidden";
   document.body.removeChild(document.getElementById("settings"));
   const programme = createProgramme(setup);
+  const stack = createEventStack();
   const dataDisplay = createDataDisplay();
   const timeDisplay = createTimeDisplay();
   const media = createMedia();
   const act = content => new Promise((res, rej) => {
+    console.log(programme.contents().length, stack.test()+1);
     timeDisplay.set(0, setup.actDuration);
     if (setup.reverse) timeDisplay.setNumber(programme.reversePosition());
     (programme.isEnd() ? timeDisplay.pause : timeDisplay.resume)();
@@ -73,5 +97,4 @@ const runTheShow = setup => new Promise((res, rej) => {
   programme.gather().then(programme.next).then(act).then(res, rej);
 });
 
-window.onload = () => setUpTheShow().then(runTheShow)
-  .then(console.log).catch(console.log);
+window.onload = () => setUpTheShow().then(runTheShow).catch(console.log);

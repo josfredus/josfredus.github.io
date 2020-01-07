@@ -32,7 +32,7 @@ const createBtnRow = function(sets, def=0) {
   let onValueChange = oldVal => null;
   const btns = sets.map(function(set) {
     const elm = document.createElement("button");
-    elm.textContent = set[1];
+    elm.innerHTML = set[1];
     elm.className = "offbtn";
     const tgl = makeBtnToggle(elm);
     tgl.setOnPutOn(function() {
@@ -101,7 +101,7 @@ const setUpTheShow = () => new Promise(function(res, rej) {
   });
   const shuffleTgl = makeBtnToggle(document.getElementById("shuffle"));
   const loopRow = createBtnRow([
-    ["noloop", "Do not loop vids"],
+    ["noloop", "Don't loop<br>videos"],
     ["underloop", "Loop no longer than images"],
     ["cutloop", "Loop and cut, as long as images"],
     ["overloop", "Loop once more, longer than images"]

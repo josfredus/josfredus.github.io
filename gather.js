@@ -9,7 +9,7 @@ const extractContentSource = post => new Promise((res, rej) => {
   }
   else if (/\.gifv$/.test(post.url)) {
     res({
-      src: [".webm", ".mp4"].map(x => https(post.url.replace(/\.\w+$/, x))),
+      src: [".mp4", ".webm"].map(x => https(post.url.replace(/\.\w+$/, x))),
       type: "video"
     });
   }
@@ -31,10 +31,10 @@ const extractContentSource = post => new Promise((res, rej) => {
     r.addEventListener("abort", () => rej(post));
     r.addEventListener("load", function() {
       const sources = [];
-      if (r.response && r.response.gfyItem && r.response.gfyItem.webmUrl)
-        sources.push(https(r.response.gfyItem.webmUrl));
       if (r.response && r.response.gfyItem && r.response.gfyItem.mp4Url)
         sources.push(https(r.response.gfyItem.mp4Url));
+      if (r.response && r.response.gfyItem && r.response.gfyItem.webmUrl)
+        sources.push(https(r.response.gfyItem.webmUrl));
       if (sources.length > 0)
         res({ src: sources, type: "video" });
       else
