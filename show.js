@@ -115,11 +115,13 @@ const createMedia = function() {
       if (elm)
         document.body.removeChild(elm);
       elm = document.body.appendChild(document.createElement(content.type));
+      elm.style.maxWidth = "" + Math.floor(window.innerWidth) + "px";
+      elm.style.maxHeight = "" + Math.floor(window.innerHeight) + "px";
       (content.type === "img" ? showImage : showVideo)(content.src);
     }
   };
 };
-
+/*
 var launchSlideshow = function(settings) {
 
 document.body.style.overflow = "hidden";
@@ -129,10 +131,6 @@ document.body.scroll = "no";
 if (settings.subredditList.length === 0) {
 	throw Error("No subreddit submitted");
 }
-/*var fetchers = [];
-settings.subredditList.forEach(function(subredditName) {
-	fetchers.push(new PostFetcher(subredditName, settings.sorting));
-});*/
 const xtrs = settings.subredditList.map(
   sub => new ContentExtractor(sub, settings.sorting, settings.period));
 
@@ -476,4 +474,4 @@ return xtrs[indexGenerator.next().value].getNextContent().then(registerPostInMem
 })
 .catch(()=>console.log("YARRR MATEY YER A SORE BUM PIRATE"));
 
-};
+};*/
