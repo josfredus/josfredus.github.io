@@ -108,6 +108,7 @@ const createMedia = function() {
       elm.appendChild(srcElm);
     });
     elm.controls = true;
+    elm.loop = true;
     elm.play();
   };
   return {
@@ -115,8 +116,8 @@ const createMedia = function() {
       if (elm)
         document.body.removeChild(elm);
       elm = document.body.appendChild(document.createElement(content.type));
-      elm.style.maxWidth = "" + Math.floor(window.innerWidth) + "px";
-      elm.style.maxHeight = "" + Math.floor(window.innerHeight) + "px";
+      elm.style.maxWidth = "" + Math.ceil(window.innerWidth) + "px";
+      elm.style.maxHeight = "" + Math.ceil(window.innerHeight) + "px";
       (content.type === "img" ? showImage : showVideo)(content.src);
     }
   };

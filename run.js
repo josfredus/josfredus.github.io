@@ -47,9 +47,8 @@ const prevActEvent = () => new Promise((res, rej) => {
 });
 
 const runTheShow = setup => new Promise((res, rej) => {
-  document.body.style.overflow = "visible";
+  document.body.style.overflow = "hidden";
   document.body.removeChild(document.getElementById("settings"));
-  window.scrollbars.visible = false;
   const programme = createProgramme(setup);
   const dataDisplay = createDataDisplay();
   const timeDisplay = createTimeDisplay();
