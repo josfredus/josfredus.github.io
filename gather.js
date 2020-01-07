@@ -167,14 +167,26 @@ const createProgramme = function(setup) {
   const contents = [];
   const remember = content => { contents.push(content); return content; };
   let current = -1;
+  let loading = false;
+  let loadingPromise = Promise.resolve();
   const iGen = indexGen(setup.xtrs.length, setup.shuffle);
-  const next = () => new Promise((res, rej) => {
-    current += 1;
-    if (contents.length === 0 || current === contents.length) 
-      setup.xtrs[iGen.next().value].getNextContent().then(remember)
-        .then(res, rej);
-    else
-      res(contents[current]);
+  const next = (p = Promise.resolve()) => new Promise((res, rej) => {
+    if (current === contents.length - 1) {
+      if (!loading) {
+        loadingPromise = setup.xtrs[iGen.next().value].getNextContent()
+          .then(remember).then(content => {
+            loading = false;
+            current += 1;
+            return content;
+          }).then(p);
+        loading = true;
+      }
+      loadingPromise.then(res, rej);
+    }
+    else {
+      current += 1;
+      Promise.resolve(contents[current]).then(p).then(res, rej);
+    }
   });
   const prev = () => new Promise((res, rej) => {
     current -= 1;
@@ -212,6 +224,7 @@ const createProgramme = function(setup) {
   });
   const gather = setup.reverse ? reverse : () => Promise.resolve();
   return {
+    test: () => current,
     contents: () => contents,
     current: () => current === -1 ? null : contents[current],
     next: next,

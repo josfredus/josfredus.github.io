@@ -5,46 +5,19 @@ pause / resume: enter, double-tap
   also makes video controls appear and put video on top of z-index
 */
 
-const nextActEvent = () => new Promise((res, rej) => {
-  window.addEventListener("keyup", function cb(event) {
-    if ([" ", "Spacebar"].indexOf(event.key) !== -1) {
-      window.removeEventListener("keyup", cb);
-      res("nextAct");
-    }
-  });
-  let x = null;
-  document.addEventListener("touchstart", function cb(evt) {
-    window.removeEventListener("touchstart", cb);
-    evt.preventDefault();
-  }, false);
-  document.addEventListener("touchend", function cb(evt) {
-    window.removeEventListener("touchend", cb);
-    evt.preventDefault();
-  }, false);
-  /*
-  let startX = 0;
-  document.addEventListener("touchstart", function(evt) {
-    document.getElementById("errorLog").textContent = "start " + evt.touches[0].clientX + " / " + window.innerWidth;
-    startX = evt.touches[0].clientX;
-  }, false);
-  document.addEventListener("touchmove", function(evt) {
-    document.getElementById("errorLog").textContent = "move " + evt.touches[0].clientX + " / " + window.innerWidth;
-    if (startX - evt.touches[0].clientX > window.innerWidth / 4) {
-      const p = document.createElement("p");
-      p.textContent = "SWIPE";
-      document.getElementById("settings").appendChild(p);
-    }
-  }, false);*/
-});
-
-const prevActEvent = () => new Promise((res, rej) => {
-  window.addEventListener("keyup", function cb(event) {
-    if (["Backspace"].indexOf(event.key) !== -1) {
-      window.removeEventListener("keyup", cb);
-      res("prevAct");
-    }
-  });
-});
+/*let startX = 0;
+document.addEventListener("touchstart", function(evt) {
+  document.getElementById("errorLog").textContent = "start " + evt.touches[0].clientX + " / " + window.innerWidth;
+  startX = evt.touches[0].clientX;
+}, false);
+document.addEventListener("touchmove", function(evt) {
+  document.getElementById("errorLog").textContent = "move " + evt.touches[0].clientX + " / " + window.innerWidth;
+  if (startX - evt.touches[0].clientX > window.innerWidth / 4) {
+    const p = document.createElement("p");
+    p.textContent = "SWIPE";
+    document.getElementById("settings").appendChild(p);
+  }
+}, false);*/
 
 const createEventStack = function() {
   let nextEvents = [];
@@ -68,13 +41,11 @@ const createEventStack = function() {
     notice();
   }, false);
   const waitForEvent = () => new Promise((res, rej) => {
-    if (nextEvents.length) {
-      res(nextEvents.length);
+    if (nextEvents.length || prevEvents.length) {
+      res({ skip: nextEvents.length - prevEvents.length, pause: false });
       nextEvents = [];
-    }
-    else if (prevEvents.length) {
       prevEvents = [];
-      res("prev");
+      noticeMe = false;
     }
     else
       document.addEventListener("okBoomer", function cb() {
@@ -97,27 +68,30 @@ const runTheShow = setup => new Promise((res, rej) => {
   const timeDisplay = createTimeDisplay();
   const media = createMedia();
   const act = content => new Promise((res, rej) => {
-    console.log(programme.contents().length);
     timeDisplay.set(0, setup.actDuration);
     if (setup.reverse) timeDisplay.setNumber(programme.reversePosition());
     (programme.isEnd() ? timeDisplay.pause : timeDisplay.resume)();
     timeDisplay.draw();
-    media.set(content);
+    //media.set(content);
     dataDisplay.set(content);
-    stack.waitForEvent().then(function(evt) {
-      const f = n => new Promise((res, rej) => programme.next()
-        .then(n > 1 ? ()=>f(n-1) : Promise.resolve()).then(res, rej));
-      return f(evt).then(act);
+    stack.waitForEvent().then(function hdl(evt) {
+      let skip = 0;
+      const f = n => new Promise((res, rej) => {
+        let p = Promise.resolve();
+        if (n > 0 && !programme.isEnd()) {
+          p = p.then(() => programme.next(cnt => { skip++; return cnt }));
+        }
+        else if (n < 0 && !programme.isStart()) {
+          skip--;
+          p = p.then(programme.prev);
+        }
+        if (Math.abs(n) > 1) p = p.then(() => f(n - Math.sign(n)));
+        else if (n === 0) p = p.then(programme.current);
+        p = p.then(res, rej);
+      });
+      return Promise.race([f(evt.skip), stack.waitForEvent().then(hdl)])
+        .then(content => skip ? act(content) : stack.waitForEvent().then(hdl));
     }).then(res, rej);
-    /*const events = [];
-    if (!programme.isEnd()) events.push(nextActEvent());
-    if (!programme.isStart()) events.push(prevActEvent());
-    Promise.race(events).then(function(name) {
-      if (name === "nextAct")
-        return programme.next().then(act);
-      if (name === "prevAct")
-        return programme.prev().then(act);
-    });*/
   });
   programme.gather().then(programme.next).then(act).then(res, rej);
 });
