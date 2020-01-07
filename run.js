@@ -62,9 +62,10 @@ const createEventStack = function() {
       notice();
     }
   });
-  window.addEventListener("touchstart", function(evt) {
+  document.addEventListener("touchstart", function(evt) {
     nextEvents.push(Date.now());
     nextEvents.sort();
+    notice();
   }, false);
   const waitForEvent = () => new Promise((res, rej) => {
     if (nextEvents.length) {
