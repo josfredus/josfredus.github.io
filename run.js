@@ -47,23 +47,42 @@ const prevActEvent = () => new Promise((res, rej) => {
 });
 
 const createEventStack = function() {
-  const nextEvents = [];
-  const prevEvents = [];
+  let nextEvents = [];
+  let prevEvents = [];
+  const notice = () => document.dispatchEvent(new Event("okBoomer"));
   window.addEventListener("keyup", function(evt) {
     if ([" ", "Spacebar", "ArrowRight", "Right"].indexOf(evt.key) !== -1) {
-      nextEvents.push(evt.timeStamp);
+      nextEvents.push(Date.now());
       nextEvents.sort();
+      notice();
     }
     else if (["Backspace", "ArrowLeft", "Left"].indexOf(evt.key) !== -1) {
-      prevEvents.push(evt.timeStamp);
+      prevEvents.push(Date.now());
       prevEvents.sort();
+      notice();
     }
   });
   window.addEventListener("touchstart", function(evt) {
-    nextEvents.push(evt.timeStamp);
+    nextEvents.push(Date.now());
     nextEvents.sort();
   }, false);
+  const waitForEvent = () => new Promise((res, rej) => {
+    if (nextEvents.length) {
+      res(nextEvents.length);
+      nextEvents = [];
+    }
+    else if (prevEvents.length) {
+      prevEvents = [];
+      res("prev");
+    }
+    else
+      document.addEventListener("okBoomer", function cb() {
+        document.removeEventListener("okBoomer", cb);
+        waitForEvent().then(res, rej);
+      });
+  });
   return {
+    waitForEvent: waitForEvent,
     test: () => nextEvents.length
   };
 };
@@ -77,14 +96,19 @@ const runTheShow = setup => new Promise((res, rej) => {
   const timeDisplay = createTimeDisplay();
   const media = createMedia();
   const act = content => new Promise((res, rej) => {
-    console.log(programme.contents().length, stack.test()+1);
+    console.log(programme.contents().length);
     timeDisplay.set(0, setup.actDuration);
     if (setup.reverse) timeDisplay.setNumber(programme.reversePosition());
     (programme.isEnd() ? timeDisplay.pause : timeDisplay.resume)();
     timeDisplay.draw();
     media.set(content);
     dataDisplay.set(content);
-    const events = [];
+    stack.waitForEvent().then(function(evt) {
+      const f = n => new Promise((res, rej) => programme.next()
+        .then(n > 1 ? ()=>f(n-1) : Promise.resolve()).then(res, rej));
+      return f(evt).then(act);
+    }).then(res, rej);
+    /*const events = [];
     if (!programme.isEnd()) events.push(nextActEvent());
     if (!programme.isStart()) events.push(prevActEvent());
     Promise.race(events).then(function(name) {
@@ -92,7 +116,7 @@ const runTheShow = setup => new Promise((res, rej) => {
         return programme.next().then(act);
       if (name === "prevAct")
         return programme.prev().then(act);
-    });
+    });*/
   });
   programme.gather().then(programme.next).then(act).then(res, rej);
 });
