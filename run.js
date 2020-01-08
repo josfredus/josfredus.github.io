@@ -105,7 +105,7 @@ window.onload = () => {
     let nTouches = 0;
     const copyTouch = touch => ({ id: touch.identifier, sX: touch.screenX,
       sY: touch.screenY, cX: touch.clientX, cY: touch.clientY,
-      px: touch.pageX, pY: touch.pageY });
+      pX: touch.pageX, pY: touch.pageY });
     const logTouch = t => "id: " + t.id + ", screen: " + Math.round(t.sX) +
       " " + Math.round(t.sY) + ", client: " + Math.round(t.cX) + " " +
       Math.round(t.cY) + ", page: " + Math.round(t.pX) + " " +
