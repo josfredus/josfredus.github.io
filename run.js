@@ -95,4 +95,45 @@ const runTheShow = setup => new Promise((res, rej) => {
   programme.gather().then(programme.next).then(act).then(res, rej);
 });
 
-window.onload = () => setUpTheShow().then(runTheShow).catch(console.log);
+// window.onload = () => setUpTheShow().then(runTheShow).catch(console.log);
+window.onload = () => {
+  const btn = document.body.appendChild(document.createElement("button"));
+  btn.innerHTML = "start touch<br>event test";
+  btn.style.font = "3em monospace";
+  btn.addEventListener("click", function cb() {
+    btn.removeEventListener("click", cb);
+    let nTouches = 0;
+    const copyTouch = touch => ({ id: touch.identifier, sX: touch.screenX,
+      sY: touch.screenY, cX: touch.clientX, cY: touch.clientY,
+      px: touch.pageX, pY: touch.pageY });
+    const logTouch = t => "id: " + t.id + ", screen: " + Math.round(t.sX) +
+      " " + Math.round(t.sY) + ", client: " + Math.round(t.cX) + " " +
+      Math.round(t.cY) + ", page: " + Math.round(t.pX) + " " +
+      Math.round(t.pY);
+    let tStart = copyTouch({});
+    let tMove = copyTouch({});
+    let tEnd = copyTouch({});
+    let tCancel = copyTouch({});
+    const p = document.body.appendChild(document.createElement("p"));
+    p.style.font = "1.2em monospace";
+    p.style.maxWidth = "" + Math.round(window.innerWidth) + "px";
+    const log = function() {
+      p.innerHTML = "window: " + Math.round(window.innerWidth) + ", ";
+      p.innerHTML += Math.round(window.innerHeight) + "<br>";
+      p.innerHTML += logTouch(tStart) + "<br>";
+      p.innerHTML += logTouch(tMove) + "<br>";
+      p.innerHTML += logTouch(tEnd) + "<br>";
+      p.innerHTML += logTouch(tCancel) + "<br>";
+    };
+    log();
+    document.addEventListener("touchstart", function(evt) {
+      tStart = copyTouch(evt.changedTouches[0]); log(); }, false);
+    document.addEventListener("touchmove", function(evt) {
+      tMove = copyTouch(evt.changedTouches[0]); log(); }, false);
+    document.addEventListener("touchend", function(evt) {
+      tEnd = copyTouch(evt.changedTouches[0]); log(); }, false);
+    document.addEventListener("touchcancel", function(evt) {
+      tCancel = copyTouch(evt.changedTouches[0]); log(); }, false);
+  });
+  setUpTheShow().then(runTheShow).catch(console.log);
+};
