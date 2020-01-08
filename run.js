@@ -54,8 +54,7 @@ const createEventStack = function() {
       });
   });
   return {
-    waitForEvent: waitForEvent,
-    test: () => nextEvents.length
+    waitForEvent: waitForEvent
   };
 };
 
@@ -72,7 +71,7 @@ const runTheShow = setup => new Promise((res, rej) => {
     if (setup.reverse) timeDisplay.setNumber(programme.reversePosition());
     (programme.isEnd() ? timeDisplay.pause : timeDisplay.resume)();
     timeDisplay.draw();
-    //media.set(content);
+    media.set(content);
     dataDisplay.set(content);
     stack.waitForEvent().then(function hdl(evt) {
       let skip = 0;
