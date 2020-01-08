@@ -35,10 +35,23 @@ const createEventStack = function() {
       notice();
     }
   });
+  let startX = 0;
+  let swipe = false;
   document.addEventListener("touchstart", function(evt) {
-    nextEvents.push(Date.now());
-    nextEvents.sort();
-    notice();
+    startX = evt.changedTouches[0].clientX;
+    swipe = false;
+  }, false);
+  document.addEventListener("touchmove", function(evt) {
+    if (swipe) return;
+    const threshold = window.innerWidth / 4;
+    const x = evt.changedTouches[0].clientX;
+    if (Math.abs(x - startX) >= threshold) {
+      swipe = true;
+      const evts = x - startX > 0 ? prevEvents : nextEvents;
+      evts.push(Date.now());
+      evts.sort();
+      notice();
+    }
   }, false);
   const waitForEvent = () => new Promise((res, rej) => {
     if (nextEvents.length || prevEvents.length) {
@@ -95,8 +108,8 @@ const runTheShow = setup => new Promise((res, rej) => {
   programme.gather().then(programme.next).then(act).then(res, rej);
 });
 
-// window.onload = () => setUpTheShow().then(runTheShow).catch(console.log);
-window.onload = () => {
+window.onload = () => setUpTheShow().then(runTheShow).catch(console.log);
+/*window.onload = () => {
   const btn = document.body.appendChild(document.createElement("button"));
   btn.innerHTML = "start touch<br>event test";
   btn.style.font = "3em monospace";
@@ -136,4 +149,4 @@ window.onload = () => {
       tCancel = copyTouch(evt.changedTouches[0]); log(); }, false);
   });
   setUpTheShow().then(runTheShow).catch(console.log);
-};
+};*/
