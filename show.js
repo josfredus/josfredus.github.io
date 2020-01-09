@@ -22,9 +22,11 @@ const createDataDisplay = function() {
   dataSubA.className = "secondaryLink";
   return {
     set: function(content) {
-      dataTitleA.textContent = content.title;
+      dataTitleA.innerHTML = content.title.replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/\'/g, '&#39;')
+        .replace(/\//g, '&#x2F;');
       dataTitleA.href = content.permalink;
-      dataSubA.textContent = "/r/" + content.subreddit;
+      dataSubA.innerText = "/r/" + content.subreddit;
       dataSubA.href = "https://www.reddit.com/r/" + content.subreddit;
     }
   };

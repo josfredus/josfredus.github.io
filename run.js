@@ -5,36 +5,23 @@ pause / resume: enter, double-tap
   also makes video controls appear and put video on top of z-index
 */
 
-/*let startX = 0;
-document.addEventListener("touchstart", function(evt) {
-  document.getElementById("errorLog").textContent = "start " + evt.touches[0].clientX + " / " + window.innerWidth;
-  startX = evt.touches[0].clientX;
-}, false);
-document.addEventListener("touchmove", function(evt) {
-  document.getElementById("errorLog").textContent = "move " + evt.touches[0].clientX + " / " + window.innerWidth;
-  if (startX - evt.touches[0].clientX > window.innerWidth / 4) {
-    const p = document.createElement("p");
-    p.textContent = "SWIPE";
-    document.getElementById("settings").appendChild(p);
-  }
-}, false);*/
-
 const createEventStack = function() {
-  let nextEvents = [];
-  let prevEvents = [];
   const notice = () => document.dispatchEvent(new Event("okBoomer"));
-  window.addEventListener("keyup", function(evt) {
-    if ([" ", "Spacebar", "ArrowRight", "Right"].indexOf(evt.key) !== -1) {
-      nextEvents.push(Date.now());
-      nextEvents.sort();
-      notice();
-    }
-    else if (["Backspace", "ArrowLeft", "Left"].indexOf(evt.key) !== -1) {
-      prevEvents.push(Date.now());
-      prevEvents.sort();
-      notice();
-    }
-  });
+  const connectKeyUp = function(keys) {
+    let evts = [];
+    window.addEventListener("keyup", evt => {
+      if (keys.indexOf(evt.key) !== -1) {
+        evts.push(performance.now());
+        evts.sort();
+        notice();
+      }
+    });
+    return evts;
+  };
+  let nextEvents = connectKeyUp([" ", "Spacebar", "ArrowRight", "Right"]);
+  let prevEvents = connectKeyUp(["Backspace", "ArrowLeft", "Left"]);
+  let pauseEvents = connectKeyUp(["Enter", "P", "ArrowDown", "Down"]);
+  let resumeEvents = connectKeyUp(["ArrowUp", "Up"]);
   let startX = 0;
   let swipe = false;
   document.addEventListener("touchstart", function(evt) {
@@ -48,17 +35,17 @@ const createEventStack = function() {
     if (Math.abs(x - startX) >= threshold) {
       swipe = true;
       const evts = x - startX > 0 ? prevEvents : nextEvents;
-      evts.push(Date.now());
+      evts.push(performance.now());
       evts.sort();
       notice();
     }
   }, false);
   const waitForEvent = () => new Promise((res, rej) => {
     if (nextEvents.length || prevEvents.length) {
-      res({ skip: nextEvents.length - prevEvents.length, pause: false });
-      nextEvents = [];
-      prevEvents = [];
-      noticeMe = false;
+      const skip = nextEvents.length - prevEvents.length;
+      while (nextEvents.length) nextEvents.pop();
+      while (prevEvents.length) prevEvents.pop();
+      res({ skip: skip, pause: false });
     }
     else
       document.addEventListener("okBoomer", function cb() {
@@ -66,8 +53,21 @@ const createEventStack = function() {
         waitForEvent().then(res, rej);
       });
   });
+  let timeoutID = 0;
+  const setupTimeout = function(delay) {
+    timeoutID += 1;
+    const safeguard = timeoutID;
+    window.setTimeout(function() {
+      if (safeguard === timeoutID) {
+        nextEvents.push(performance.now())
+        nextEvents.sort()
+        notice();
+      }
+    }, delay);
+  };
   return {
-    waitForEvent: waitForEvent
+    waitForEvent: waitForEvent,
+    setupTimeout: setupTimeout
   };
 };
 
@@ -79,74 +79,44 @@ const runTheShow = setup => new Promise((res, rej) => {
   const dataDisplay = createDataDisplay();
   const timeDisplay = createTimeDisplay();
   const media = createMedia();
+  const load = content => new Promise((res, rej) => {
+    media.set(content);
+    content.duration = setup.actDuration;
+    res(content);
+  });
   const act = content => new Promise((res, rej) => {
-    timeDisplay.set(0, setup.actDuration);
+    dataDisplay.set(content);
     if (setup.reverse) timeDisplay.setNumber(programme.reversePosition());
     (programme.isEnd() ? timeDisplay.pause : timeDisplay.resume)();
-    timeDisplay.draw();
-    media.set(content);
-    dataDisplay.set(content);
+    const orig = performance.now();
+    window.requestAnimationFrame(function cb() {
+      const t = (performance.now() - orig) / 1000;
+      timeDisplay.set(t, content.duration);
+      timeDisplay.draw();
+      if (t < content.duration && content === programme.current())
+        window.requestAnimationFrame(cb);
+    });
+    stack.setupTimeout(content.duration * 1000);
     stack.waitForEvent().then(function hdl(evt) {
       let skip = 0;
       const f = n => new Promise((res, rej) => {
-        let p = Promise.resolve();
-        if (n > 0 && !programme.isEnd()) {
-          p = p.then(() => programme.next(cnt => { skip++; return cnt }));
-        }
-        else if (n < 0 && !programme.isStart()) {
-          skip--;
-          p = p.then(programme.prev);
-        }
-        if (Math.abs(n) > 1) p = p.then(() => f(n - Math.sign(n)));
-        else if (n === 0) p = p.then(programme.current);
+        let p = null;
+        if (n > 0 && !programme.isEnd())
+          p = programme.next(cnt => { skip++; return cnt });
+        else if (n < 0 && !programme.isStart())
+          p = programme.prev().then(cnt => { skip--; return cnt });
+        else
+          p = programme.current();
+        if (Math.abs(n) > 1)
+          p = p.then(() => f(n - Math.sign(n)));
         p = p.then(res, rej);
       });
       return Promise.race([f(evt.skip), stack.waitForEvent().then(hdl)])
+        .then(load) // maybe put load in a race
         .then(content => skip ? act(content) : stack.waitForEvent().then(hdl));
     }).then(res, rej);
   });
-  programme.gather().then(programme.next).then(act).then(res, rej);
+  programme.gather().then(programme.next).then(load).then(act).then(res, rej);
 });
 
 window.onload = () => setUpTheShow().then(runTheShow).catch(console.log);
-/*window.onload = () => {
-  const btn = document.body.appendChild(document.createElement("button"));
-  btn.innerHTML = "start touch<br>event test";
-  btn.style.font = "3em monospace";
-  btn.addEventListener("click", function cb() {
-    btn.removeEventListener("click", cb);
-    let nTouches = 0;
-    const copyTouch = touch => ({ id: touch.identifier, sX: touch.screenX,
-      sY: touch.screenY, cX: touch.clientX, cY: touch.clientY,
-      pX: touch.pageX, pY: touch.pageY });
-    const logTouch = t => "id: " + t.id + ", screen: " + Math.round(t.sX) +
-      " " + Math.round(t.sY) + ", client: " + Math.round(t.cX) + " " +
-      Math.round(t.cY) + ", page: " + Math.round(t.pX) + " " +
-      Math.round(t.pY);
-    let tStart = copyTouch({});
-    let tMove = copyTouch({});
-    let tEnd = copyTouch({});
-    let tCancel = copyTouch({});
-    const p = document.body.appendChild(document.createElement("p"));
-    p.style.font = "1.2em monospace";
-    p.style.maxWidth = "" + Math.round(window.innerWidth) + "px";
-    const log = function() {
-      p.innerHTML = "window: " + Math.round(window.innerWidth) + ", ";
-      p.innerHTML += Math.round(window.innerHeight) + "<br>";
-      p.innerHTML += logTouch(tStart) + "<br>";
-      p.innerHTML += logTouch(tMove) + "<br>";
-      p.innerHTML += logTouch(tEnd) + "<br>";
-      p.innerHTML += logTouch(tCancel) + "<br>";
-    };
-    log();
-    document.addEventListener("touchstart", function(evt) {
-      tStart = copyTouch(evt.changedTouches[0]); log(); }, false);
-    document.addEventListener("touchmove", function(evt) {
-      tMove = copyTouch(evt.changedTouches[0]); log(); }, false);
-    document.addEventListener("touchend", function(evt) {
-      tEnd = copyTouch(evt.changedTouches[0]); log(); }, false);
-    document.addEventListener("touchcancel", function(evt) {
-      tCancel = copyTouch(evt.changedTouches[0]); log(); }, false);
-  });
-  setUpTheShow().then(runTheShow).catch(console.log);
-};*/
