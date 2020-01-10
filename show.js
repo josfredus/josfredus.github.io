@@ -110,6 +110,10 @@ const createTimeDisplay = function(size=256) {
       draw();
     },
     resume: () => pause = false,
+    resume: function(elapsed, duration) {
+      pause = false;
+      animateProgress(elapsed, duration);
+    },
     setNumber: function(n) {
       number = n;
       draw();

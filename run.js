@@ -126,17 +126,17 @@ const runTheShow = setup => new Promise((res, rej) => {
   const dataDisplay = createDataDisplay();
   const timeDisplay = createTimeDisplay();
   const media = createMedia();
-  let pause = false;
-  let orig = 0;
-  let pauseT = 0;
   const load = content => new Promise((res, rej) => {
     media.set(content);
     content.duration = setup.actDuration;
     res(content);
   });
+  let pause = false;
+  let tStart = 0;
+  let tElapsed = 0;
   const act = content => new Promise((res, rej) => {
-    orig = performance.now();
-    pauseT = orig;
+    tStart = performance.now();
+    tElapsed = 0;
     dataDisplay.set(content);
     if (setup.reverse)
       timeDisplay.setNumber(programme.reversePosition());
@@ -153,13 +153,13 @@ const runTheShow = setup => new Promise((res, rej) => {
       let togglePause = stack.getTogglePause(evts, pause);
       if (togglePause && pause && !programme.isEnd()) {
         pause = false;
-        stack.setupTimeout(content.duration - (pauseT - orig));
-        timeDisplay.resume();
-        timeDisplay.animateProgress(pauseT - orig, content.duration);
+        tStart = performance.now();
+        stack.setupTimeout(content.duration - tElapsed);
+        timeDisplay.resume(tElapsed, content.duration);
       }
       else if (togglePause && !pause && !programme.isEnd()) {
         pause = true;
-        pauseT = performance.now();
+        tElapsed += performance.now() - tStart;
         stack.cancelTimeout();
         timeDisplay.pause();
       }
