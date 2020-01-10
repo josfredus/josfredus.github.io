@@ -157,7 +157,7 @@ const setUpTheShow = () => new Promise(function(res, rej) {
         if (xtrs.length)
           res({
             xtrs: xtrs,
-            actDuration: duration,
+            actDuration: duration * 1000,
             shuffle: shuffleTgl.isOn(),
             loop: loopRow.getValue(),
             reverse: reverseTgl.isOn(),

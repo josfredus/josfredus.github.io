@@ -52,6 +52,7 @@ const createTimeDisplay = function(size=256) {
   canvas.style.width = "5rem";
   canvas.style.height = "5rem";
   const ctx = canvas.getContext("2d");
+  const setProgress = (elapsed, dur) => progress = Math.min(elapsed / dur, 1);
   const drawProgress = function() {
     const r1 = size / 2;
     const r2 = r1 * 7/12;
@@ -83,18 +84,39 @@ const createTimeDisplay = function(size=256) {
     ctx.textBaseline = "middle";
     ctx.fillText("" + number, size / 2, size / 2);
   };
+  const draw = function() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    (pause ? drawPause : drawProgress)();
+    if (number !== null)
+      drawNumber();
+  };
+  let animationID = 0;
+  const animateProgress = function(progressStart, duration) {
+    animationID += 1;
+    const safeguard = animationID;
+    const orig = performance.now();
+    window.requestAnimationFrame(function cb() {
+      if (animationID !== safeguard) return;
+      setProgress(performance.now() - orig + progressStart, duration);
+      draw();
+      window.requestAnimationFrame(cb);
+    });
+  };
   return {
-    set: (elapsed, dur) => progress = Math.min(elapsed / dur, 1),
-    pause: () => pause = true,
+    setProgress: setProgress,
+    pause: function() {
+      pause = true;
+      animationID += 1;
+      draw();
+    },
     resume: () => pause = false,
-    setNumber: n => number = n,
+    setNumber: function(n) {
+      number = n;
+      draw();
+    },
     removeNumber: () => number = null,
-    draw: function() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      (pause ? drawPause : drawProgress)();
-      if (number !== null)
-        drawNumber();
-    }
+    draw: draw,
+    animateProgress: animateProgress
   };
 };
 
