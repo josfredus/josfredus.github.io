@@ -151,6 +151,10 @@ const runTheShow = setup => new Promise((res, rej) => {
     stack.waitForEvent().then(function hdl(evts) {
       let nSkip = stack.getSkip(evts);
       let togglePause = stack.getTogglePause(evts, pause);
+      if (programme.isStart() && nSkip < 0 && !pause)
+        togglePause = true;
+      if ((programme.isStart() && nSkip<0) || (programme.isEnd() && nSkip>0))
+        nSkip = 0;
       if (togglePause && pause && !programme.isEnd()) {
         pause = false;
         tStart = performance.now();
