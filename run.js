@@ -9,8 +9,13 @@ const createEventStack = function() {
   const notice = () => document.dispatchEvent(new Event("okBoomer"));
   const connectKeyUp = function(keys) {
     let evts = [];
+    window.addEventListener("keydown", evt => {
+      if (keys.indexOf(evt.key) !== -1)
+        evt.preventDefault();
+    });
     window.addEventListener("keyup", evt => {
       if (keys.indexOf(evt.key) !== -1) {
+        evt.preventDefault();
         evts.push(performance.now());
         evts.sort();
         notice();
@@ -118,18 +123,45 @@ const createEventStack = function() {
   };
 };
 
-const runTheShow = setup => new Promise((res, rej) => {
+const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
   document.body.style.overflow = "hidden";
   document.body.removeChild(document.getElementById("settings"));
-  const programme = createProgramme(setup);
+  const programme = createProgramme(setup, timeDisplay);
   const stack = createEventStack();
   const dataDisplay = createDataDisplay();
-  const timeDisplay = createTimeDisplay();
-  const media = createMedia();
+  let media = null;
   const load = content => new Promise((res, rej) => {
-    media.set(content);
+    // elm.videoWidth, elm.videoHeight
+    console.log("loading \"" + content.title + "\"...");
     content.duration = setup.actDuration;
-    res(content);
+    const animID = timeDisplay.animateLoading();
+    const elm = document.createElement(content.type);
+    elm.style.maxWidth = "" + Math.ceil(window.innerWidth) + "px";
+    elm.style.maxHeight = "" + Math.ceil(window.innerHeight) + "px";
+    const resolve = function() {
+      timeDisplay.stopLoadingAnimation(animID);
+      if (media !== null)
+        document.body.removeChild(media);
+      media = elm;
+      document.body.appendChild(media);
+      res(content);
+    };
+    if (content.type === "img") {
+      elm.src = content.src;
+      resolve();
+    }
+    else if (content.type === "video") {
+      content.src.forEach(function(src) {
+        const srcElm = document.createElement("source");
+        srcElm.src = src;
+        elm.appendChild(srcElm);
+      });
+      elm.controls = true;
+      elm.loop = true;
+      elm.play().then(resolve);
+    }
+    else
+      res(content);
   });
   let pause = false;
   let tStart = 0;
@@ -155,6 +187,8 @@ const runTheShow = setup => new Promise((res, rej) => {
         togglePause = true;
       if ((programme.isStart() && nSkip<0) || (programme.isEnd() && nSkip>0))
         nSkip = 0;
+      if (nSkip)
+        stack.cancelTimeout();
       if (togglePause && pause && !programme.isEnd()) {
         pause = false;
         tStart = performance.now();
@@ -180,14 +214,20 @@ const runTheShow = setup => new Promise((res, rej) => {
           p = p.then(() => skip(n - Math.sign(n)));
         p = p.then(res, rej);
       });
-      const p = nSkip ?
-        Promise.race([skip(nSkip), stack.waitForEvent().then(hdl)]) :
-        stack.waitForEvent().then(hdl);
-      return p.then(load) // maybe put load in a race
-        .then(cnt => skipped ? act(cnt) : stack.waitForEvent().then(hdl));
+      return (nSkip ?
+          Promise.race([skip(nSkip), stack.waitForEvent().then(hdl)]) :
+          stack.waitForEvent().then(hdl))
+        .then(content => skipped ?
+          load(content).then(act) :
+          stack.waitForEvent().then(hdl));
     }).then(res, rej);
   });
   programme.gather().then(programme.next).then(load).then(act).then(res, rej);
 });
 
-window.onload = () => setUpTheShow().then(runTheShow).catch(console.log);
+window.onload = function() {
+  const timeDisplay = createTimeDisplay();
+  setUpTheShow(timeDisplay)
+    .then(setup => runTheShow(setup, timeDisplay))
+    .catch(console.log);
+};

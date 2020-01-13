@@ -69,7 +69,7 @@ const createBtnRow = function(sets, def=0) {
   };
 };
 
-const setUpTheShow = () => new Promise(function(res, rej) {
+const setUpTheShow = timeDisplay => new Promise(function(res, rej) {
   const sortingRow = createBtnRow([
     ["hot", "Hot"],
     ["new", "New"],
@@ -144,9 +144,10 @@ const setUpTheShow = () => new Promise(function(res, rej) {
       const period = periodIsRelevant(sorting) ? periodRow.getValue() : "";
       subs.split(/\s+/).forEach(function(part) {
         if (part !== "")
-          xtrs.push(new ContentExtractor(part, 5, sorting, period))
+          xtrs.push(new ContentExtractor(part, sorting, period))
       });
-      Promise.all(xtrs.map(xtr => xtr.loadNextContent())).then(nothing => {
+      const animID = timeDisplay.animateLoading();
+      Promise.all(xtrs.map(xtr => xtr.loadNextContent())).then(() => {
         let i = 0;
         while (i < xtrs.length) {
           if (xtrs[i].barren)
@@ -154,7 +155,8 @@ const setUpTheShow = () => new Promise(function(res, rej) {
           else
             i++;
         }
-        if (xtrs.length)
+        if (xtrs.length) {
+          timeDisplay.stopLoadingAnimation(animID);
           res({
             xtrs: xtrs,
             actDuration: duration * 1000,
@@ -164,7 +166,9 @@ const setUpTheShow = () => new Promise(function(res, rej) {
             reverseStart: rvrsStrt,
             reverseLoop: rvsLoopTgl.isOn()
           });
+        }
         else {
+          timeDisplay.stopLoadingAnimation(animID);
           document.getElementById("start").disabled = false;
           processing = false;
           document.getElementById("errorLog").textContent = "It looks " +

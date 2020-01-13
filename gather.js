@@ -14,7 +14,7 @@ const extractContentSource = post => new Promise((res, rej) => {
     });
   }
   else if (/\/\/v\.redd\.it\//.test(post.url)) {
-    if (post.media && post.media.reddit_video)
+    if (post.media && post.media.reddit_video) 
       res({
         src: [https(post.media.reddit_video.fallback_url)],
         type: "video"
@@ -27,8 +27,12 @@ const extractContentSource = post => new Promise((res, rej) => {
     const r = new XMLHttpRequest();
     r.responseType = "json";
     r.open("GET", "https://api.gfycat.com/v1/gfycats/" + id);
-    r.addEventListener("error", () => rej(post));
-    r.addEventListener("abort", () => rej(post));
+    const hdlError = function(s) {
+      console.log(s + " loading gfycat sources: " + post.url);
+      rej(post);
+    };
+    r.addEventListener("error", () => hdlError("error"));
+    r.addEventListener("abort", () => hdlError("abort"));
     r.addEventListener("load", function() {
       const sources = [];
       if (r.response && r.response.gfyItem && r.response.gfyItem.mp4Url)
@@ -38,7 +42,7 @@ const extractContentSource = post => new Promise((res, rej) => {
       if (sources.length > 0)
         res({ src: sources, type: "video" });
       else
-        rej(post);
+        hdlError("no result");
     });
     r.send();
   }
@@ -46,9 +50,8 @@ const extractContentSource = post => new Promise((res, rej) => {
     rej(post);
 });
 
-const ContentExtractor = function(sub, pre=5, sorting="hot", period="") {
-  this.subreddit = sub;
-  this.preload = pre;
+const ContentExtractor = function(subreddit, sorting="hot", period="") {
+  this.subreddit = subreddit;
   this.sorting = sorting;
   this.period = period;
   this.contents = [];
@@ -58,7 +61,6 @@ const ContentExtractor = function(sub, pre=5, sorting="hot", period="") {
   this.i = null;
   this.barren = false;
   this.consecutiveEmptyListings = 0;
-  this.frozen = false;
 };
 
 ContentExtractor.prototype.loadNextContent =
@@ -68,33 +70,27 @@ function() { return (that => new Promise((res, rej) => {
     that.barren = that.contents.length === 0;
     that.loadNextContent().then(res, rej);
   };
-  if (that.barren || that.exhausted || that.frozen)
-    res();
-  else if (that.contents.length > (that.i===null?-1:that.i) + that.preload)
+  if (that.barren || that.exhausted)
     res();
   else if (that.listing.length) {
     const post = that.listing.shift();
     extractContentSource(post)
-    .then(source => {
-      if (that.frozen) {
+      .then(source => {
+        const content = {
+          permalink: "https://www.reddit.com" + post.permalink,
+          title: post.title,
+          flair: post.author_flair_text,
+          subreddit: that.subreddit,
+          type: source.type,
+          src: source.src
+        };
+        that.consecutiveEmptyListings = 0;
+        that.contents.push(content);
         res();
-        return;
-      }
-      const content = {
-        permalink: "https://www.reddit.com" + post.permalink,
-        title: post.title,
-        subreddit: that.subreddit,
-        type: source.type,
-        src: source.src
-      };
-      that.consecutiveEmptyListings = 0;
-      that.contents.push(content);
-      that.loadNextContent();
-      res();
-    })
-    .catch(() => {
-      that.loadNextContent().then(res, rej);
-    });
+      })
+      .catch(() => {
+        that.loadNextContent().then(res, rej);
+      });
   }
   else if (that.consecutiveEmptyListings < 5) {
     const r = new XMLHttpRequest();
@@ -104,7 +100,7 @@ function() { return (that => new Promise((res, rej) => {
       that.after);
     r.addEventListener("load", function() {
       if (r.response.data && r.response.data.children &&
-          r.response.data.children.length && !that.frozen) {
+          r.response.data.children.length) {
         that.listing = that.listing.concat(
           r.response.data.children.map(child => child.data));
         that.after = that.listing.slice(-1)[0].name;
@@ -122,27 +118,21 @@ function() { return (that => new Promise((res, rej) => {
     subIsExhausted();
 }))(this)};
 
-ContentExtractor.prototype.getNextContent =
+ContentExtractor.prototype.withdrawContent =
 function() { return (that => new Promise((res, rej) => {
   if (that.barren)
-    res();
-  else if (that.exhausted || that.frozen) {
+    res(null);
+  else if (that.exhausted) {
     that.i = that.i === null ? 0 : that.i + 1;
     that.i = that.i >= that.contents.length ? 0 : that.i;
     res(that.contents[that.i]);
   }
-  else if (that.i === null && that.contents.length) {
-    that.i = 0;
-    res(that.contents[that.i]);
-    that.loadNextContent();
-  }
-  else if (!that.contents.length || that.i >= that.contents.length - 1) {
-    that.loadNextContent().then(() => that.getNextContent()).then(res, rej);
-  }
+  else if (!that.contents.length ||
+           (that.i !== null && that.i >= that.contents.length - 1))
+    that.loadNextContent().then(() => that.withdrawContent()).then(res, rej);
   else {
-    that.i += 1;
+    that.i = that.i === null ? 0 : that.i + 1;
     res(that.contents[that.i]);
-    that.loadNextContent();
   }
 }))(this)};
 
@@ -163,66 +153,71 @@ const indexGen = function*(n, shuffle) {
 	}
 };
 
-const createProgramme = function(setup) {
+const createProgramme = function(setup, timeDisplay, nPreload = 20) {
   const contents = [];
-  const remember = content => { contents.push(content); return content; };
   let current = -1;
-  let loading = false;
-  let loadingPromise = Promise.resolve();
+  const isEnd = () => setup.reverse && !setup.reverseLoop &&
+    current >= setup.xtrs.length * setup.reverseStart - 1;
+  const isStart = () => current <= 0;
   const iGen = indexGen(setup.xtrs.length, setup.shuffle);
-  const next = (p = Promise.resolve()) => new Promise((res, rej) => {
-    if (current === contents.length - 1) {
-      if (!loading) {
-        loadingPromise = setup.xtrs[iGen.next().value].getNextContent()
-          .then(remember).then(content => {
-            loading = false;
-            current += 1;
-            return content;
-          }).then(p);
-        loading = true;
-      }
-      loadingPromise.then(res, rej);
-    }
-    else {
-      current += 1;
-      Promise.resolve(contents[current]).then(p).then(res, rej);
-    }
+  const preload = function() {
+    const n = contents.length;
+    contents.push(Promise.resolve(n > 0 ? contents[n - 1] : null)
+      .then(() => setup.xtrs[iGen.next().value].withdrawContent())
+      .then(content => { contents[n] = content; return content; }));
+  };
+  const startPreloading = () => new Promise((res, rej) => {
+    preload();
+    Promise.resolve(contents[0]).then(res, rej);
+    for (let i = 1; i < nPreload; i++) preload();
   });
+  const nextStd = (p = Promise.resolve()) => new Promise((res, rej) => {
+    if (contents.length - current <= nPreload + 1) preload();
+    current += 1;
+    Promise.resolve(contents[current]).then(p).then(res, rej);
+  });
+  const reverseTops = [];
+  const reverse = () => new Promise((res, rej) => {
+    const getTopN = xtr => new Promise((res, rej) => {
+      const result = [];
+      const f = () => new Promise((res, rej) => {
+        if (result.length < setup.reverseStart)
+          xtr.withdrawContent().then(function(content) {
+            if (xtr.exhausted && content === result[0])
+              return res();
+            result.push(content);
+            f().then(res, rej);
+          });
+        else
+          res();
+      });
+      f().then(function() {
+        result.reverse();
+        for (let i = result.length; i < setup.reverseStart; i++)
+          result.push(result.slice(-1)[0]);
+        res(result);
+      }, rej);
+    });
+    Promise.all(setup.xtrs.map(getTopN)).then(function(tops) {
+      tops.forEach(t => reverseTops.push(t));
+      res();
+    });
+  });
+  const nextRvr = (p = Promise.resolve()) => new Promise((res, rej) => {
+    if (!isEnd()) {
+      current += 1;
+      if (current >= contents.length)
+        contents.push(reverseTops[iGen.next().value][
+          Math.floor(current / reverseTops.length) % setup.reverseStart]);
+    }
+    Promise.resolve(contents[current]).then(p).then(res, rej);
+  });
+  const gather = setup.reverse ? reverse : startPreloading;
+  const next = setup.reverse ? nextRvr : nextStd;
   const prev = () => new Promise((res, rej) => {
     current -= 1;
     res(contents[current]);
   });
-  const reverse = () => new Promise((res, rej) => {
-    const getTopN = xtr => new Promise((res2, rej2) => {
-      const result = [];
-      const f = () => new Promise((res3, rej3) => {
-        if (result.length < setup.reverseStart)
-          xtr.getNextContent().then(function(content) {
-            if (xtr.exhausted && content === result[0])
-              return res3();
-            result.push(content);
-            return f().then(res3, rej3);
-          });
-        else
-          return res3();
-      });
-      f().then(function() {
-        result.reverse()
-        for (let i = result.length; i < setup.reverseStart; i++)
-          result.push(result.slice(-1)[0]);
-        return res2(result);
-      }, rej2);
-    });
-    Promise.all(setup.xtrs.map(getTopN)).then(function(tops) {
-      tops.forEach(function(t, i) {
-        setup.xtrs[i].frozen = true;
-        while (setup.xtrs[i].contents.length) setup.xtrs[i].contents.pop();
-        t.forEach(content => setup.xtrs[i].contents.push(content));
-      });
-      res();
-    });
-  });
-  const gather = setup.reverse ? reverse : () => Promise.resolve();
   return {
     test: () => current,
     contents: () => contents,
@@ -230,9 +225,9 @@ const createProgramme = function(setup) {
     next: next,
     prev: prev,
     gather: gather,
-    isEnd: () => setup.reverse && !setup.reverseLoop &&
-      current >= setup.xtrs.length * setup.reverseStart - 1,
-    isStart: () => current <= 0,
-    reversePosition: () => setup.reverseStart - Math.floor(current / setup.xtrs.length) % setup.reverseStart
+    isEnd: isEnd,
+    isStart: isStart,
+    reversePosition: () => setup.reverseStart -
+      Math.floor(current / setup.xtrs.length) % setup.reverseStart
   };
 };
