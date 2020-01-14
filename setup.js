@@ -108,7 +108,14 @@ const setUpTheShow = timeDisplay => new Promise(function(res, rej) {
   ], 1);
   loopRow.appendTo(document.getElementById("loop"));
   const reverseTgl = makeBtnToggle(document.getElementById("reverse"));
-  const rvsLoopTgl = makeBtnToggle(document.getElementById("reverseLoop"));
+  const rvsStartInp = document.getElementById("reverseStart");
+  const rvsLoopBtn = document.getElementById("reverseLoop");
+  const rvsLoopTgl = makeBtnToggle(rvsLoopBtn);
+  const rvsP = document.getElementById("reverseP");
+  reverseTgl.setOnPutOn(
+    () => settingsDiv.insertBefore(rvsP, document.getElementById("start")));
+  reverseTgl.setOnPutOff(() => settingsDiv.removeChild(revP));
+  settingsDiv.removeChild(rvsP);
   let processing = false;
   const letsGetItOn = function() {
     if (processing) return;
@@ -125,7 +132,7 @@ const setUpTheShow = timeDisplay => new Promise(function(res, rej) {
       addError("Input a <em>number</em> for the time skip.");
     else if (duration < 1)
       addError("Time skip must be <em>at least</em> 1 second long.");
-    let rvrsStrt = parseFloat(document.getElementById("reverseStart").value);
+    let rvrsStrt = parseFloat(rvsStartInp.value);
     if (reverseTgl.isOn()) {
       if (isNaN(rvrsStrt) || rvrsStrt !== Math.floor(rvrsStrt))
         addError("Input an <em>integer</em> for the starting place.");
@@ -187,7 +194,7 @@ const setUpTheShow = timeDisplay => new Promise(function(res, rej) {
   const okBoomer = evt => { if(evt.key === "Enter") evt.preventDefault(); };
   document.getElementById("shuffle").addEventListener("keydown", okBoomer);
   document.getElementById("reverse").addEventListener("keydown", okBoomer);
-  document.getElementById("reverseLoop").addEventListener("keydown", okBoomer);
+  rvsLoopBtn.addEventListener("keydown", okBoomer);
   window.addEventListener("keyup", function(evt) {
     if (evt.key === "Enter")
       letsGetItOn();

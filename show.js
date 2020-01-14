@@ -1,6 +1,12 @@
+const Z_MEDIA_UNDER = 0;
+const Z_TIME_DISPLAY = 1;
+const Z_DATA_DISPLAY = 2;
+// const Z_DIMMER = 3;
+const Z_MEDIA_OVER = 4;
+
 const createDataDisplay = function() {
   const dataDiv = document.body.appendChild(document.createElement("div"));
-  dataDiv.style.zIndex = 2;
+  dataDiv.style.zIndex = Z_DATA_DISPLAY;
   dataDiv.style.position = "absolute";
   dataDiv.style.bottom = 0;
   dataDiv.style.left = 0;
@@ -55,7 +61,7 @@ const createTimeDisplay = function(size=256) {
   canvas.width = size;
   canvas.height = size;
   canvas.style.position = "absolute";
-  canvas.style.zIndex = 1;
+  canvas.style.zIndex = Z_TIME_DISPLAY;
   canvas.style.bottom = 0;
   canvas.style.right = 0;
   canvas.style.margin = "1rem";
@@ -102,7 +108,7 @@ const createTimeDisplay = function(size=256) {
   const drawPause = function() {
     const margin = size / 4;
     const barWidth = (size - 2 * margin) / 3;
-    ctx.fillStyle = pMin;
+    ctx.fillStyle = sMaj;
     ctx.fillRect(margin, margin, barWidth, size-2*margin);
     ctx.fillRect(size-margin-barWidth, margin, barWidth, size-2*margin);
   };
@@ -145,6 +151,7 @@ const createTimeDisplay = function(size=256) {
   const stopLoadingAnimation = function(animID) {
     if (activeLoadingAnims.indexOf(animID) !== -1)
       activeLoadingAnims.splice(activeLoadingAnims.indexOf(animID), 1);
+    draw();
   };
   const drawLoading = function() {
     let t1 = (performance.now() - loadingAnimOrig) / loadingAnimLoopTime;
@@ -158,11 +165,10 @@ const createTimeDisplay = function(size=256) {
   };
   const draw = function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    (pause ? drawPause : drawProgress)();
-    if (activeLoadingAnims.length)
-      drawLoading();
-    if (number !== null)
-      drawNumber();
+    drawProgress();
+    if (activeLoadingAnims.length) drawLoading();
+    if (pause) drawPause();
+    if (number !== null) drawNumber();
   };
   return {
     setProgress: setProgress,
@@ -172,10 +178,6 @@ const createTimeDisplay = function(size=256) {
       draw();
     },
     resume: () => pause = false,
-    resume: function(elapsed, duration) {
-      pause = false;
-      animateProgress(elapsed, duration);
-    },
     setNumber: function(n) {
       number = n;
       draw();
@@ -185,5 +187,153 @@ const createTimeDisplay = function(size=256) {
     animateProgress: animateProgress,
     animateLoading: animateLoading,
     stopLoadingAnimation: stopLoadingAnimation
+  };
+};
+
+const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
+  let media = null;
+  const isImage = () => media instanceof HTMLImageElement;
+  const isVideo = () => media instanceof HTMLVideoElement;
+  const load = content => new Promise((res, rej) => {
+    if (!content) return rej();
+    const elm = document.createElement(content.type);
+    elm.style.maxWidth = "" + Math.ceil(window.innerWidth) + "px";
+    elm.style.maxHeight = "" + Math.ceil(window.innerHeight) + "px";
+    elm.style.position = "absolute";
+    elm.style.zIndex = Z_MEDIA_UNDER;
+    if (content.type === "img") {
+      elm.src = content.src;
+      res(elm);
+    }
+    else
+      loadVideo(content, elm).then(res, rej);
+  });
+  const loadVideo = (content, elm) => new Promise((res, rej) => {
+    content.src.forEach(function(src) {
+      const srcElm = document.createElement("source");
+      srcElm.src = src;
+      elm.appendChild(srcElm);
+    });
+    elm.controls = false;
+    elm.loop = true;
+    let loaded = false;
+    let aborted = false;
+    elm.addEventListener("canplay", function cb() {
+      elm.removeEventListener("canplay", cb);
+      if (!aborted) {
+        loaded = true;
+        res(elm);
+      }
+    });
+    window.setTimeout(function() {
+      if (!loaded) {
+        aborted = true;
+        rej();
+      }
+    }, tAbort);
+  });
+  const computeDuration = function() {
+    let duration = setup.actDuration;
+    if (isVideo()) {
+      duration = media.duration * 1000;
+      if (setup.loop !== "noloop") {
+        while (duration <= setup.actDuration - media.duration * 1000)
+          duration += media.duration * 1000;
+        if (duration < setup.actDuration) {
+          if (setup.loop === "cutloop")
+            duration = setup.actDuration;
+          else if (setup.loop === "overloop")
+            duration += media.duration * 1000;
+        }
+      }
+    }
+    return duration;
+  };
+  let preloaded = [];
+  let updateID = 0;
+  const update = programme => new Promise((res, rej) => {
+    const crt = programme.getCurrentIndex();
+    for (let i = 0; i <= Math.max(crt + preload, preloaded.length - 1); i++) {
+      if (crt - preload <= i && i <= crt + preload) {
+        if (!preloaded[i]) {
+          preloaded[i] = programme.getContent(i)
+            .then(content => new Promise((res, rej) => {
+              if (!content || content.cursed) return res(null);
+              load(content).then(res).catch(() => {
+                content.cursed = true;
+                res(null);
+              });
+            }));
+        }
+      }
+      else {
+        Promise.resolve(preloaded[i]).then(function(elm) {
+          if (!elm) return;
+          if (elm instanceof HTMLVideoElement) {
+            while (elm.firstChild) 
+              elm.removeChild(elm.firstChild);
+            elm.load();
+          }
+          else
+            elm.src = "";
+        }).catch(e => null);
+        preloaded[i] = null;
+      }
+    }
+    const animID = tDis.animateLoading();
+    updateID += 1;
+    const safeguard = updateID;
+    Promise.resolve(preloaded[crt]).then(elm => {
+      tDis.stopLoadingAnimation(animID);
+      if (updateID !== safeguard) return rej("expired");
+      if (!elm) return rej("nocontent");
+      if (media !== null) {
+        if (isVideo()) {
+          media.pause();
+          media.currentTime = 0;
+        }
+        document.body.removeChild(media);
+      }
+      media = elm;
+      document.body.appendChild(media);
+      res(computeDuration());
+    });
+  });
+  const play = () => new Promise((res, rej) => {
+    if (isImage()) res();
+    else if (isVideo()) media.play().then(res, rej);
+    else rej();
+  });
+  const showControls = function() {
+    if (!media) return;
+    media.style.zIndex = Z_MEDIA_OVER;
+    if (isVideo()) media.controls = true;
+  };
+  const hideControls = function() {
+    if (!media) return;
+    media.style.zIndex = Z_MEDIA_UNDER;
+    if (isVideo()) media.controls = false;
+  };
+  const setOnPlay = f => {
+    if (!media || !isVideo()) return;
+    media.addEventListener("play", function cb() {
+      media.removeEventListener("play", cb);
+      f();
+    });
+  };
+  const rectifyCurrentTime = function(elapsed) {
+    if (!isVideo() || !media || !media.duration) return;
+    media.currentTime = elapsed/1000 -
+      Math.floor(elapsed/1000 / media.duration) * media.duration;
+  };
+  return {
+    update: update,
+    isImage: isImage,
+    isVideo: isVideo,
+    play: play,
+    showControls: showControls,
+    hideControls: hideControls,
+    setOnPlay: setOnPlay,
+    rectifyCurrentTime: rectifyCurrentTime
   };
 };

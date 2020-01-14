@@ -156,9 +156,26 @@ const indexGen = function*(n, shuffle) {
 const createProgramme = function(setup, timeDisplay, nPreload = 20) {
   const contents = [];
   let current = -1;
-  const isEnd = () => setup.reverse && !setup.reverseLoop &&
-    current >= setup.xtrs.length * setup.reverseStart - 1;
-  const isStart = () => current <= 0;
+  const getEndIndex = function() {
+    if (!setup.reverse || setup.reverseLoop) return Infinity;
+    let result = setup.xtrs.length * setup.reverseStart - 1;
+    while (result >= 0) {
+      if (!contents[result] || !contents[result].cursed) return result;
+      result--;
+    }
+    return result;
+  };
+  const getStartIndex = function() {
+    let result = 0;
+    let end = getEndIndex();
+    while (result < contents.length && result <= end) {
+      if (contents[result] && !contents[result].cursed) return result;
+      result++;
+    }
+    return result;
+  };
+  const isEnd = () => current >= getEndIndex();
+  const isStart = () => current <= getStartIndex();
   const iGen = indexGen(setup.xtrs.length, setup.shuffle);
   const preload = function() {
     const n = contents.length;
@@ -173,8 +190,10 @@ const createProgramme = function(setup, timeDisplay, nPreload = 20) {
   });
   const nextStd = (p = Promise.resolve()) => new Promise((res, rej) => {
     if (contents.length - current <= nPreload + 1) preload();
-    current += 1;
-    Promise.resolve(contents[current]).then(p).then(res, rej);
+    current++;
+    Promise.resolve(contents[current]).then(
+      content => content.cursed ? nextStd(p) : Promise.resolve(content).then(p)
+    ).then(res, rej);
   });
   const reverseTops = [];
   const reverse = () => new Promise((res, rej) => {
@@ -215,11 +234,25 @@ const createProgramme = function(setup, timeDisplay, nPreload = 20) {
   const gather = setup.reverse ? reverse : startPreloading;
   const next = setup.reverse ? nextRvr : nextStd;
   const prev = () => new Promise((res, rej) => {
-    current -= 1;
+    current--;
+    while (current > 0 && contents[current].cursed) current--;
     res(contents[current]);
   });
+  const getContent = index => new Promise((res, rej) => {
+    if (index < 0 ||
+        (setup.reverse && !setup.reverseLoop &&
+          index >= setup.xtrs.length * setup.reverseStart))
+      return res(Promise.resolve(null));
+    if (index < contents.length) return res(Promise.resolve(contents[index]));
+    if (setup.reverse)
+      for (let i = contents.length; i <= index; i++)
+        contents.push(reverseTops[iGen.next().value][
+          Math.floor(i / reverseTops.length) % setup.reverseStart]);
+    else
+      for (let i = contents.length - 1; i < index; i++) preload();
+    res(Promise.resolve(contents[index]));
+  });
   return {
-    test: () => current,
     contents: () => contents,
     current: () => current === -1 ? null : contents[current],
     next: next,
@@ -227,7 +260,12 @@ const createProgramme = function(setup, timeDisplay, nPreload = 20) {
     gather: gather,
     isEnd: isEnd,
     isStart: isStart,
-    reversePosition: () => setup.reverseStart -
-      Math.floor(current / setup.xtrs.length) % setup.reverseStart
+    reversePosition: () => setup.reverse ? (setup.reverseStart -
+      Math.floor(current / setup.xtrs.length) % setup.reverseStart) : null,
+    curse: index => contents[index].cursed = true,
+    getCurrentIndex: () => current,
+    getEndIndex: getEndIndex,
+    getStartIndex: getStartIndex,
+    getContent: getContent
   };
 };

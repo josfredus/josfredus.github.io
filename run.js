@@ -27,6 +27,16 @@ const createEventStack = function() {
   let prevEvents = connectKeyUp(["Backspace", "ArrowLeft", "Left"]);
   let pauseEvents = connectKeyUp(["Enter", "p", "P", "ArrowDown", "Down"]);
   let resumeEvents = connectKeyUp(["ArrowUp", "Up"]);
+  const triggerNext = function(n = 1) {
+    for (let i = 1; i <= n; i++) nextEvents.push(performance.now());
+    nextEvents.sort();
+    notice();
+  };
+  const triggerPrev = function(n = 1) {
+    for (let i = 1; i <= n; i++) prevEvents.push(performance.now());
+    prevEvents.sort();
+    notice();
+  };
   let startX = 0;
   let swipe = false;
   let lastTap = { t: null, x: null, y: null };
@@ -77,6 +87,7 @@ const createEventStack = function() {
       }
     }, delay);
   };
+  let waitID = 0;
   const waitForEvent = () => new Promise((res, rej) => {
     if (nextEvents.length || prevEvents.length ||
         pauseEvents.length || resumeEvents.length) {
@@ -92,11 +103,15 @@ const createEventStack = function() {
       evts.sort((a, b) => a.t - b.t);
       res(evts);
     }
-    else
+    else {
+      waitID += 1;
+      const safeguard = waitID;
       document.addEventListener("okBoomer", function cb() {
         document.removeEventListener("okBoomer", cb);
+        if (waitID !== safeguard) return res([]);
         waitForEvent().then(res, rej);
       });
+    }
   });
   const getSkip = evts => {
     let n = 0;
@@ -119,7 +134,9 @@ const createEventStack = function() {
     getSkip: getSkip,
     getTogglePause: getTogglePause,
     setupTimeout: setupTimeout,
-    cancelTimeout: () => timeoutID += 1
+    cancelTimeout: () => timeoutID += 1,
+    triggerNext: triggerNext,
+    triggerPrev: triggerPrev
   };
 };
 
@@ -129,77 +146,93 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
   const programme = createProgramme(setup, timeDisplay);
   const stack = createEventStack();
   const dataDisplay = createDataDisplay();
-  let media = null;
-  const load = content => new Promise((res, rej) => {
-    // elm.videoWidth, elm.videoHeight
-    console.log("loading \"" + content.title + "\"...");
-    content.duration = setup.actDuration;
-    const animID = timeDisplay.animateLoading();
-    const elm = document.createElement(content.type);
-    elm.style.maxWidth = "" + Math.ceil(window.innerWidth) + "px";
-    elm.style.maxHeight = "" + Math.ceil(window.innerHeight) + "px";
-    const resolve = function() {
-      timeDisplay.stopLoadingAnimation(animID);
-      if (media !== null)
-        document.body.removeChild(media);
-      media = elm;
-      document.body.appendChild(media);
-      res(content);
-    };
-    if (content.type === "img") {
-      elm.src = content.src;
-      resolve();
-    }
-    else if (content.type === "video") {
-      content.src.forEach(function(src) {
-        const srcElm = document.createElement("source");
-        srcElm.src = src;
-        elm.appendChild(srcElm);
-      });
-      elm.controls = true;
-      elm.loop = true;
-      elm.play().then(resolve);
-    }
-    else
-      res(content);
-  });
+  const media = createMediaHandler(setup, timeDisplay);
   let pause = false;
   let tStart = 0;
   let tElapsed = 0;
-  const act = content => new Promise((res, rej) => {
+  const act = (content, from="next") => new Promise((res, rej) => {
+    console.log(content.title);
+    dataDisplay.set(content);
+    timeDisplay.setProgress(0, setup.actDuration);
+    timeDisplay.setNumber(programme.reversePosition());
     tStart = performance.now();
     tElapsed = 0;
-    dataDisplay.set(content);
-    if (setup.reverse)
-      timeDisplay.setNumber(programme.reversePosition());
-    if (programme.isEnd()) {
-      pause = true;
-      timeDisplay.pause();
-    }
-    if (!pause) {
-      stack.setupTimeout(content.duration);
-      timeDisplay.animateProgress(0, content.duration);
-    }
+    let actDuration = setup.actDuration;
+    let mediaIsPlaying = false;
+    media.update(programme)
+      .then(duration => {
+        actDuration = duration;
+        media.play().then(() => {
+          mediaIsPlaying = true;
+          tStart = performance.now();
+          tElapsed = 0;
+          if (!pause) {
+            stack.setupTimeout(duration);
+            timeDisplay.animateProgress(0, duration);
+          }
+          else media.showControls();
+        }).catch(() => {
+          media.showControls();
+          pause = true;
+          timeDisplay.setProgress(0, duration);
+          timeDisplay.pause();
+          media.setOnPlay(() => {
+            media.hideControls();
+            mediaIsPlaying = true;
+            tStart = performance.now();
+            tElapsed = 0;
+            pause = false;
+            stack.setupTimeout(duration);
+            timeDisplay.resume();
+            timeDisplay.animateProgress(0, duration);
+          });
+        });
+      }).catch(error => {
+        if (error === "nocontent") {
+          const crt = programme.getCurrentIndex();
+          if (crt >= programme.getEndIndex()) stack.triggerPrev();
+          else if (crt <= programme.getStartIndex()) stack.triggerNext();
+          else if (from === "next") stack.triggerNext();
+          else if (from === "prev") stack.triggerPrev();
+        }
+      });
     stack.waitForEvent().then(function hdl(evts) {
       let nSkip = stack.getSkip(evts);
       let togglePause = stack.getTogglePause(evts, pause);
-      if (programme.isStart() && nSkip < 0 && !pause)
+      let outOfBorderSkip = false;
+      if (!pause && ((programme.isStart() && nSkip < 0) ||
+          (programme.isEnd() && nSkip > 0))) {
+        togglePause = true;
+        outOfBorderSkip = true;
+      }
+      if (programme.isEnd() && nSkip > 0 && !pause)
         togglePause = true;
       if ((programme.isStart() && nSkip<0) || (programme.isEnd() && nSkip>0))
         nSkip = 0;
       if (nSkip)
         stack.cancelTimeout();
-      if (togglePause && pause && !programme.isEnd()) {
+      if (togglePause && pause) {
         pause = false;
-        tStart = performance.now();
-        stack.setupTimeout(content.duration - tElapsed);
-        timeDisplay.resume(tElapsed, content.duration);
+        timeDisplay.resume();
+        media.hideControls();
+        if (mediaIsPlaying) {
+          tStart = performance.now();
+          stack.setupTimeout(actDuration - tElapsed);
+          timeDisplay.animateProgress(tElapsed, actDuration);
+          media.rectifyCurrentTime(tElapsed);
+        }
       }
-      else if (togglePause && !pause && !programme.isEnd()) {
+      else if (togglePause && !pause) {
         pause = true;
+        timeDisplay.pause();
+        media.showControls();
         tElapsed += performance.now() - tStart;
         stack.cancelTimeout();
-        timeDisplay.pause();
+        if (outOfBorderSkip) {
+          tElapsed = 0;
+          timeDisplay.setProgress(0, actDuration);
+          timeDisplay.draw();
+        }
       }
       let skipped = 0;
       const skip = n => new Promise((res, rej) => {
@@ -217,12 +250,12 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
       return (nSkip ?
           Promise.race([skip(nSkip), stack.waitForEvent().then(hdl)]) :
           stack.waitForEvent().then(hdl))
-        .then(content => skipped ?
-          load(content).then(act) :
+        .then(cnt => skipped ?
+          act(cnt, nSkip > 0 ? "next" : "prev") :
           stack.waitForEvent().then(hdl));
     }).then(res, rej);
   });
-  programme.gather().then(programme.next).then(load).then(act).then(res, rej);
+  programme.gather().then(programme.next).then(act).then(res, rej);
 });
 
 window.onload = function() {
