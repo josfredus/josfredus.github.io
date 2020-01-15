@@ -1,8 +1,7 @@
 const Z_MEDIA_UNDER = 0;
-const Z_TIME_DISPLAY = 1;
-const Z_DATA_DISPLAY = 2;
-// const Z_DIMMER = 3;
-const Z_MEDIA_OVER = 4;
+const Z_DATA_DISPLAY = 1;
+const Z_MEDIA_OVER = 2;
+const Z_TIME_DISPLAY = 3;
 
 const createDataDisplay = function() {
   const dataDiv = document.body.appendChild(document.createElement("div"));
@@ -203,8 +202,8 @@ const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
       const a = window.innerWidth / width;
       const b = window.innerHeight / height;
       const r = Math.min(a, b);
-      media.style.width = "" + Math.round(width * r) + "px";
-      media.style.height = "" + Math.round(height * r) + "px";
+      media.style.width = "" + Math.ceil(width * r) + "px";
+      media.style.height = "" + Math.ceil(height * r) + "px";
       media.style.left = "" +
         Math.round((window.innerWidth - width * r) / 2) + "px";
       media.style.top = "" +
