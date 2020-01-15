@@ -192,6 +192,7 @@ const createTimeDisplay = function(size=256) {
 
 const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
   let media = null;
+  let foreground = false;
   const isImage = () => media instanceof HTMLImageElement;
   const isVideo = () => media instanceof HTMLVideoElement;
   const load = content => new Promise((res, rej) => {
@@ -295,6 +296,7 @@ const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
         document.body.removeChild(media);
       }
       media = elm;
+      (foreground ? goForeground : goBackground)();
       document.body.appendChild(media);
       res(computeDuration());
     });
@@ -305,14 +307,22 @@ const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
     else rej();
   });
   const showControls = function() {
-    if (!media) return;
-    media.style.zIndex = Z_MEDIA_OVER;
     if (isVideo()) media.controls = true;
   };
   const hideControls = function() {
+    if (isVideo()) media.controls = false;
+  };
+  const goForeground = function() {
+    foreground = true;
+    if (!media) return;
+    media.style.zIndex = Z_MEDIA_OVER;
+    showControls();
+  };
+  const goBackground = function() {
+    foreground = false;
     if (!media) return;
     media.style.zIndex = Z_MEDIA_UNDER;
-    if (isVideo()) media.controls = false;
+    hideControls();
   };
   const setOnPlay = f => {
     if (!media || !isVideo()) return;
@@ -333,7 +343,10 @@ const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
     play: play,
     showControls: showControls,
     hideControls: hideControls,
+    goForeground: goForeground,
+    goBackground: goBackground,
     setOnPlay: setOnPlay,
-    rectifyCurrentTime: rectifyCurrentTime
+    rectifyCurrentTime: rectifyCurrentTime,
+    isForeground: () => foreground
   };
 };

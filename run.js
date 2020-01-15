@@ -1,12 +1,19 @@
 /* CONTROLS
-next slide: spacebar, swipe left
-prev slide: backspace, swipe right
-pause / resume: enter, double-tap
-  also makes video controls appear and puts content on top of z-index
+next slide: spacebar, right arrow, swipe left
+prev slide: backspace, left arrow, swipe right
+pause: enter, p, down arrow, click anywhere, double-tap
+resume: enter, p, down arrow, up arrow, double-tap
+put in foreground: pause by double-tap or by click anywhere
+put in background: resume or click elsewhere than content
 */
 
-const createEventStack = function() {
+const createEventStack = function(media) {
   const notice = () => document.dispatchEvent(new Event("okBoomer"));
+  const trigger = function(evts) {
+    evts.push(performance.now());
+    evts.sort();
+    notice();
+  };
   const connectKeyUp = function(keys) {
     let evts = [];
     window.addEventListener("keydown", evt => {
@@ -16,27 +23,27 @@ const createEventStack = function() {
     window.addEventListener("keyup", evt => {
       if (keys.indexOf(evt.key) !== -1) {
         evt.preventDefault();
-        evts.push(performance.now());
-        evts.sort();
-        notice();
+        trigger(evts);
       }
     });
     return evts;
   };
   let nextEvents = connectKeyUp([" ", "Spacebar", "ArrowRight", "Right"]);
   let prevEvents = connectKeyUp(["Backspace", "ArrowLeft", "Left"]);
-  let pauseEvents = connectKeyUp(["Enter", "p", "P", "ArrowDown", "Down"]);
+  const triggerNext = () => trigger(nextEvents);
+  const triggerPrev = () => trigger(prevEvents);
+  let toggleEvents = connectKeyUp(["Enter", "p", "P", "ArrowDown", "Down"]);
+  let showEvents = [];
+  let pauseEvents = [];
+  document.addEventListener("click", function() {
+    if (media.isForeground())
+      trigger(toggleEvents);
+    else {
+      trigger(pauseEvents);
+      trigger(showEvents);
+    }
+  });
   let resumeEvents = connectKeyUp(["ArrowUp", "Up"]);
-  const triggerNext = function(n = 1) {
-    for (let i = 1; i <= n; i++) nextEvents.push(performance.now());
-    nextEvents.sort();
-    notice();
-  };
-  const triggerPrev = function(n = 1) {
-    for (let i = 1; i <= n; i++) prevEvents.push(performance.now());
-    prevEvents.sort();
-    notice();
-  };
   let startX = 0;
   let swipe = false;
   let lastTap = { t: null, x: null, y: null };
@@ -53,9 +60,8 @@ const createEventStack = function() {
         performance.now() - lastTap.t <= doubleTapInterval &&
         dx * dx + dy * dy <= doubleTapRadius * doubleTapRadius) {
       lastTap.t = null;
-      pauseEvents.push(performance.now());
-      pauseEvents.sort();
-      notice();
+      trigger(toggleEvents);
+      trigger(showEvents);
     }
     else {
       lastTap.t = performance.now();
@@ -65,14 +71,11 @@ const createEventStack = function() {
   }, false);
   document.addEventListener("touchmove", function(evt) {
     if (swipe) return;
-    const threshold = window.innerWidth / 4;
+    const threshold = Math.min(window.innerWidth, window.innerHeight) / 4;
     const x = evt.changedTouches[0].clientX;
     if (Math.abs(x - startX) >= threshold) {
       swipe = true;
-      const evts = x - startX > 0 ? prevEvents : nextEvents;
-      evts.push(performance.now());
-      evts.sort();
-      notice();
+      trigger(x - startX > 0 ? prevEvents : nextEvents);
     }
   }, false);
   let timeoutID = 0;
@@ -80,17 +83,14 @@ const createEventStack = function() {
     timeoutID += 1;
     const safeguard = timeoutID;
     window.setTimeout(function() {
-      if (safeguard === timeoutID) {
-        nextEvents.push(performance.now())
-        nextEvents.sort()
-        notice();
-      }
+      if (safeguard === timeoutID)
+        trigger(nextEvents);
     }, delay);
   };
   let waitID = 0;
   const waitForEvent = () => new Promise((res, rej) => {
-    if (nextEvents.length || prevEvents.length ||
-        pauseEvents.length || resumeEvents.length) {
+    if (nextEvents.length || prevEvents.length || showEvents.length ||
+        toggleEvents.length || pauseEvents.length || resumeEvents.length) {
       const evts = [];
       const store = function(xevts, n) {
         while (xevts.length)
@@ -98,6 +98,8 @@ const createEventStack = function() {
       };
       store(nextEvents, "next");
       store(prevEvents, "prev");
+      store(showEvents, "show");
+      store(toggleEvents, "toggle");
       store(pauseEvents, "pause");
       store(resumeEvents, "resume");
       evts.sort((a, b) => a.t - b.t);
@@ -113,7 +115,7 @@ const createEventStack = function() {
       });
     }
   });
-  const getSkip = evts => {
+  const getSkip = function(evts) {
     let n = 0;
     evts.forEach(function(evt) {
       if (evt.n === "next") n++;
@@ -121,18 +123,26 @@ const createEventStack = function() {
     });
     return n;
   };
-  const getTogglePause = (evts, pause) => {
+  const getTogglePause = function(evts, pause) {
     let toggle = false;
     evts.forEach(function(evt) {
-      if (evt.n === "pause") toggle = !toggle;
+      if (evt.n === "toggle") toggle = !toggle;
+      else if (evt.n === "pause") toggle = !pause;
       else if (evt.n === "resume") toggle = pause;
     });
     return toggle;
+  };
+  const getNeedVisibility = function(evts, pause) {
+    if (pause && getTogglePause(evts, pause)) return false;
+    let need = false;
+    evts.forEach(evt => { if (evt.n === "show") need = true; });
+    return need;
   };
   return {
     waitForEvent: waitForEvent,
     getSkip: getSkip,
     getTogglePause: getTogglePause,
+    getNeedVisibility: getNeedVisibility,
     setupTimeout: setupTimeout,
     cancelTimeout: () => timeoutID += 1,
     triggerNext: triggerNext,
@@ -144,9 +154,9 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
   document.body.style.overflow = "hidden";
   document.body.removeChild(document.getElementById("settings"));
   const programme = createProgramme(setup, timeDisplay);
-  const stack = createEventStack();
   const dataDisplay = createDataDisplay();
   const media = createMediaHandler(setup, timeDisplay);
+  const stack = createEventStack(media);
   let pause = false;
   let tStart = 0;
   let tElapsed = 0;
@@ -172,12 +182,12 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
           }
           else media.showControls();
         }).catch(() => {
-          media.showControls();
+          media.goForeground();
           pause = true;
           timeDisplay.setProgress(0, duration);
           timeDisplay.pause();
           media.setOnPlay(() => {
-            media.hideControls();
+            media.goBackground();
             mediaIsPlaying = true;
             tStart = performance.now();
             tElapsed = 0;
@@ -199,6 +209,7 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
     stack.waitForEvent().then(function hdl(evts) {
       let nSkip = stack.getSkip(evts);
       let togglePause = stack.getTogglePause(evts, pause);
+      let needVisibility = stack.getNeedVisibility(evts, pause);
       let outOfBorderSkip = false;
       if (!pause && ((programme.isStart() && nSkip < 0) ||
           (programme.isEnd() && nSkip > 0))) {
@@ -211,10 +222,12 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
         nSkip = 0;
       if (nSkip)
         stack.cancelTimeout();
+      if (needVisibility)
+        media.goForeground();
       if (togglePause && pause) {
         pause = false;
         timeDisplay.resume();
-        media.hideControls();
+        media.goBackground();
         if (mediaIsPlaying) {
           tStart = performance.now();
           stack.setupTimeout(actDuration - tElapsed);
