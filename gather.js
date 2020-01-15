@@ -79,8 +79,10 @@ function() { return (that => new Promise((res, rej) => {
         const content = {
           permalink: "https://www.reddit.com" + post.permalink,
           title: post.title,
+          author: post.author,
           flair: post.author_flair_text,
           subreddit: that.subreddit,
+          created: new Date(post.created_utc * 1000),
           type: source.type,
           src: source.src
         };

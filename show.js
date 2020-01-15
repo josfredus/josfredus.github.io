@@ -44,6 +44,7 @@ const createDataDisplay = function() {
       }
       else if (dataFlairP.parentNode === dataDiv)
         dataDiv.removeChild(dataFlairP);
+      // "https://www.reddit.com/user/" + content.author + "/posts/"
     }
   };
 };
@@ -195,12 +196,23 @@ const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
   let foreground = false;
   const isImage = () => media instanceof HTMLImageElement;
   const isVideo = () => media instanceof HTMLVideoElement;
+  const resize = function() {
+    if (media) {
+      const width = isImage() ? media.naturalWidth : media.videoWidth;
+      const height = isImage() ? media.naturalHeight : media.videoHeight;
+      const a = window.innerWidth / width;
+      const b = window.innerHeight / height;
+      const r = Math.min(a, b);
+      media.style.width = "" + Math.floor(width * r) + "px";
+      media.style.height = "" + Math.floor(height * r) + "px";
+    }
+  };
+  window.addEventListener("resize", resize);
   const load = content => new Promise((res, rej) => {
     if (!content) return rej();
     const elm = document.createElement(content.type);
-    elm.style.maxWidth = "" + Math.ceil(window.innerWidth) + "px";
-    elm.style.maxHeight = "" + Math.ceil(window.innerHeight) + "px";
     elm.style.position = "absolute";
+    resize();
     elm.style.zIndex = Z_MEDIA_UNDER;
     if (content.type === "img") {
       elm.src = content.src;
