@@ -212,7 +212,6 @@ const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
     if (!content) return rej();
     const elm = document.createElement(content.type);
     elm.style.position = "absolute";
-    resize();
     elm.style.zIndex = Z_MEDIA_UNDER;
     if (content.type === "img") {
       elm.src = content.src;
@@ -308,6 +307,7 @@ const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
         document.body.removeChild(media);
       }
       media = elm;
+      resize();
       (foreground ? goForeground : goBackground)();
       document.body.appendChild(media);
       res(computeDuration());
