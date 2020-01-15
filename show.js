@@ -196,18 +196,22 @@ const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
   let foreground = false;
   const isImage = () => media instanceof HTMLImageElement;
   const isVideo = () => media instanceof HTMLVideoElement;
-  const resize = function() {
+  const fit = function() {
     if (media) {
       const width = isImage() ? media.naturalWidth : media.videoWidth;
       const height = isImage() ? media.naturalHeight : media.videoHeight;
       const a = window.innerWidth / width;
       const b = window.innerHeight / height;
       const r = Math.min(a, b);
-      media.style.width = "" + Math.floor(width * r) + "px";
-      media.style.height = "" + Math.floor(height * r) + "px";
+      media.style.width = "" + Math.round(width * r) + "px";
+      media.style.height = "" + Math.round(height * r) + "px";
+      media.style.left = "" +
+        Math.round((window.innerWidth - width * r) / 2) + "px";
+      media.style.top = "" +
+        Math.round((window.innerHeight - height * r) / 2) + "px";
     }
   };
-  window.addEventListener("resize", resize);
+  window.addEventListener("resize", fit);
   const load = content => new Promise((res, rej) => {
     if (!content) return rej();
     const elm = document.createElement(content.type);
@@ -307,7 +311,7 @@ const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
         document.body.removeChild(media);
       }
       media = elm;
-      resize();
+      fit();
       (foreground ? goForeground : goBackground)();
       document.body.appendChild(media);
       res(computeDuration());

@@ -151,6 +151,7 @@ const createEventStack = function(media) {
 };
 
 const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
+  window.setTimeout(function(){ window.scrollTo(0, 1); }, 0);
   document.body.style.overflow = "hidden";
   document.body.removeChild(document.getElementById("settings"));
   const programme = createProgramme(setup, timeDisplay);
