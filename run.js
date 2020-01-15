@@ -1,10 +1,10 @@
 /* CONTROLS
 next slide: spacebar, right arrow, swipe left
 prev slide: backspace, left arrow, swipe right
-pause: enter, p, down arrow, click anywhere, double-tap
+pause: enter, p, down arrow, escape, double-tap
 resume: enter, p, down arrow, up arrow, double-tap
-put in foreground: pause by double-tap or by click anywhere
-put in background: resume or click elsewhere than content
+put in foreground: pause by double-tap or by escape
+put in background: resume
 */
 
 const createEventStack = function(media) {
@@ -35,12 +35,14 @@ const createEventStack = function(media) {
   let toggleEvents = connectKeyUp(["Enter", "p", "P", "ArrowDown", "Down"]);
   let showEvents = [];
   let pauseEvents = [];
-  document.addEventListener("click", function() {
-    if (media.isForeground())
-      trigger(toggleEvents);
-    else {
-      trigger(pauseEvents);
-      trigger(showEvents);
+  window.addEventListener("keyup", evt => {
+    if (evt.key === "Escape") {
+      if (media.isForeground())
+        trigger(toggleEvents);
+      else {
+        trigger(pauseEvents);
+        trigger(showEvents);
+      }
     }
   });
   let resumeEvents = connectKeyUp(["ArrowUp", "Up"]);

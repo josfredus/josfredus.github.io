@@ -190,7 +190,7 @@ const createTimeDisplay = function(size=256) {
   };
 };
 
-const createMediaHandler = function(setup, tDis, preload = 2, tAbort = 5000) {
+const createMediaHandler = function(setup, tDis, preload = 1, tAbort = 6000) {
   let media = null;
   let foreground = false;
   const isImage = () => media instanceof HTMLImageElement;
