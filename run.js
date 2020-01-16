@@ -152,21 +152,20 @@ const createEventStack = function(media) {
   };
 };
 
-const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
+const runTheShow = (setup, timepiece) => new Promise((res, rej) => {
   document.body.style.overflow = "hidden";
   document.body.removeChild(document.getElementById("settings"));
-  const programme = createProgramme(setup, timeDisplay);
-  const dataDisplay = createDataDisplay();
-  const media = createMediaHandler(setup, timeDisplay);
+  const programme = createProgramme(setup);
+  const describe = createDescribeFunction(setup.xtrs[0].period);
+  const media = createMediaHandler(setup, timepiece);
   const stack = createEventStack(media);
   let pause = false;
   let tStart = 0;
   let tElapsed = 0;
   const act = (content, from="next") => new Promise((res, rej) => {
-    console.log(content.title);
-    dataDisplay.set(content);
-    timeDisplay.setProgress(0, setup.actDuration);
-    timeDisplay.setNumber(programme.reversePosition());
+    describe(content);
+    timepiece.setProgress(0, setup.actDuration);
+    timepiece.setNumber(programme.reversePosition());
     tStart = performance.now();
     tElapsed = 0;
     let actDuration = setup.actDuration;
@@ -180,14 +179,14 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
           tElapsed = 0;
           if (!pause) {
             stack.setupTimeout(duration);
-            timeDisplay.animateProgress(0, duration);
+            timepiece.animateProgress(0, duration);
           }
           else media.showControls();
         }).catch(() => {
           media.goForeground();
           pause = true;
-          timeDisplay.setProgress(0, duration);
-          timeDisplay.pause();
+          timepiece.setProgress(0, duration);
+          timepiece.pause();
           media.setOnPlay(() => {
             media.goBackground();
             mediaIsPlaying = true;
@@ -195,8 +194,8 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
             tElapsed = 0;
             pause = false;
             stack.setupTimeout(duration);
-            timeDisplay.resume();
-            timeDisplay.animateProgress(0, duration);
+            timepiece.resume();
+            timepiece.animateProgress(0, duration);
           });
         });
       }).catch(error => {
@@ -228,25 +227,25 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
         media.goForeground();
       if (togglePause && pause) {
         pause = false;
-        timeDisplay.resume();
+        timepiece.resume();
         media.goBackground();
         if (mediaIsPlaying) {
           tStart = performance.now();
           stack.setupTimeout(actDuration - tElapsed);
-          timeDisplay.animateProgress(tElapsed, actDuration);
+          timepiece.animateProgress(tElapsed, actDuration);
           media.rectifyCurrentTime(tElapsed);
         }
       }
       else if (togglePause && !pause) {
         pause = true;
-        timeDisplay.pause();
+        timepiece.pause();
         media.showControls();
         tElapsed += performance.now() - tStart;
         stack.cancelTimeout();
         if (outOfBorderSkip) {
           tElapsed = 0;
-          timeDisplay.setProgress(0, actDuration);
-          timeDisplay.draw();
+          timepiece.setProgress(0, actDuration);
+          timepiece.draw();
         }
       }
       let skipped = 0;
@@ -274,8 +273,10 @@ const runTheShow = (setup, timeDisplay) => new Promise((res, rej) => {
 });
 
 window.onload = function() {
-  const timeDisplay = createTimeDisplay();
-  setUpTheShow(timeDisplay)
-    .then(setup => runTheShow(setup, timeDisplay))
+  document.getElementById("description").style.display = "none";
+  document.getElementById("timepiece").style.display = "none";
+  const timepiece = createTimepiece();
+  setUpTheShow(timepiece)
+    .then(setup => runTheShow(setup, timepiece))
     .catch(console.log);
 };

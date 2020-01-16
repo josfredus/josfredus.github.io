@@ -35,6 +35,8 @@ const extractContentSource = post => new Promise((res, rej) => {
     r.addEventListener("abort", () => hdlError("abort"));
     r.addEventListener("load", function() {
       const sources = [];
+      // if (r.response && r.response.gfyItem && r.response.gfyItem.mobileUrl)
+        // sources.push(https(r.response.gfyItem.mobileUrl));
       if (r.response && r.response.gfyItem && r.response.gfyItem.mp4Url)
         sources.push(https(r.response.gfyItem.mp4Url));
       if (r.response && r.response.gfyItem && r.response.gfyItem.webmUrl)
@@ -155,7 +157,7 @@ const indexGen = function*(n, shuffle) {
 	}
 };
 
-const createProgramme = function(setup, timeDisplay, nPreload = 20) {
+const createProgramme = function(setup, nPreload = 20) {
   const contents = [];
   let current = -1;
   const getEndIndex = function() {

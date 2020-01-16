@@ -69,7 +69,7 @@ const createBtnRow = function(sets, def=0) {
   };
 };
 
-const setUpTheShow = timeDisplay => new Promise(function(res, rej) {
+const setUpTheShow = timepiece => new Promise(function(res, rej) {
   const sortingRow = createBtnRow([
     ["hot", "Hot"],
     ["new", "New"],
@@ -153,7 +153,7 @@ const setUpTheShow = timeDisplay => new Promise(function(res, rej) {
         if (part !== "")
           xtrs.push(new ContentExtractor(part, sorting, period))
       });
-      const animID = timeDisplay.animateLoading();
+      const animID = timepiece.animateLoading();
       Promise.all(xtrs.map(xtr => xtr.loadNextContent())).then(() => {
         let i = 0;
         while (i < xtrs.length) {
@@ -163,7 +163,7 @@ const setUpTheShow = timeDisplay => new Promise(function(res, rej) {
             i++;
         }
         if (xtrs.length) {
-          timeDisplay.stopLoadingAnimation(animID);
+          timepiece.stopLoadingAnimation(animID);
           res({
             xtrs: xtrs,
             actDuration: duration * 1000,
@@ -175,7 +175,7 @@ const setUpTheShow = timeDisplay => new Promise(function(res, rej) {
           });
         }
         else {
-          timeDisplay.stopLoadingAnimation(animID);
+          timepiece.stopLoadingAnimation(animID);
           document.getElementById("start").disabled = false;
           processing = false;
           document.getElementById("errorLog").textContent = "It looks " +

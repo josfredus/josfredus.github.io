@@ -1,17 +1,39 @@
 :root {
   --primary-major: #ff69b4;
-  --primary-minor: #ffddf4;  /* or ffb3de */
+  --primary-minor: #ffb3de;  /* or ffddf4 */
   --secondary-major: #989898;
-  --secondary-minor: #dcdcdc;
-  --background-color: #ffffff;
+  --secondary-minor: #e0e0e0;
+  --background-color: #fffefe;
 }
 body {
   margin: 0;
   background-color: var(--background-color);
 }
+.onbtn {
+  background-color: var(--primary-major);
+}
+.offbtn {
+  background-color: var(--secondary-major);
+}
+
+#description {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  margin: 1rem;
+  padding: 0;
+  max-width: 75%;
+  font: 1rem verdana, sans-serif;
+  color: var(--secondary-major);
+}
+#description * {
+  margin: 0;
+  padding: 0;
+}
 .primaryLink {
   text-decoration: none;
   color: var(--primary-major);
+  /* text-shadow: var(--secondary-minor) 1px 1px; */
 }
 .primaryLink:hover, .primaryLink:active {
   color: var(--primary-minor);
@@ -23,12 +45,21 @@ body {
 .secondaryLink:hover, .secondaryLink:active {
 	color: var(--secondary-minor);
 }
-.onbtn {
-  background-color: var(--primary-major);
+#title {
+  display: block;
+  margin-bottom: 0.1rem;
+  font: 2rem helvetica, sans-serif;
 }
-.offbtn {
-  background-color: var(--secondary-major);
+#timepiece {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin: 1rem;
+  width: 5rem;
+  height: 5rem;
 }
+
+/*
 #settingsDiv {
   margin-top: 10%;
   margin-left: 25%;
@@ -145,3 +176,4 @@ body {
   font: 1em helvetica, sans-serif;
   color: var(--secondary-minor);
 }
+*/

@@ -1,54 +1,56 @@
 const Z_MEDIA_UNDER = 0;
-const Z_DATA_DISPLAY = 1;
+const Z_DESCRIPTION = 1;
 const Z_MEDIA_OVER = 2;
 const Z_TIME_DISPLAY = 3;
 
-const createDataDisplay = function() {
-  const dataDiv = document.body.appendChild(document.createElement("div"));
-  dataDiv.style.zIndex = Z_DATA_DISPLAY;
-  dataDiv.style.position = "absolute";
-  dataDiv.style.bottom = 0;
-  dataDiv.style.left = 0;
-  dataDiv.style.maxWidth = "75%";
-  dataDiv.style.margin = "1rem";
-  const dataTitleP = dataDiv.appendChild(document.createElement("p"));
-  dataTitleP.style.font = "1.5em helvetica, sans-serif";
-  dataTitleP.style.margin = 0;
-  const dataTitleA = dataTitleP.appendChild(document.createElement("a"));
-  dataTitleA.target = "_blank";
-  dataTitleA.rel = "noreferrer noopener";
-  dataTitleA.className = "primaryLink";
-  const dataFlairP = document.createElement("p");
-  dataFlairP.style.font = "1em helvetica, sans-serif";
-  dataFlairP.style.margin = 0;
-  const dataSubP = dataDiv.appendChild(document.createElement("p"));
-  dataSubP.style.font = "1em verdana, sans-serif";
-  dataSubP.style.margin = 0;
-  dataSubP.style.color = "var(--primary-minor)";
-  const dataSubA = dataSubP.appendChild(document.createElement("a"));
-  dataSubA.target = "_blank";
-  dataSubA.rel = "noreferrer noopener";
-  dataSubA.className = "secondaryLink";
-  return {
-    set: function(content) {
-      dataTitleA.innerHTML = content.title.replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/\'/g, '&#39;')
-        .replace(/\//g, '&#x2F;');
-      dataTitleA.href = content.permalink;
-      dataSubA.innerText = "/r/" + content.subreddit;
-      dataSubA.href = "https://www.reddit.com/r/" + content.subreddit;
-      if (content.flair) {
-        dataFlairP.innerText = content.flair;
-        dataDiv.insertBefore(dataFlairP, dataSubP);
-      }
-      else if (dataFlairP.parentNode === dataDiv)
-        dataDiv.removeChild(dataFlairP);
-      // "https://www.reddit.com/user/" + content.author + "/posts/"
-    }
+const createDescribeFunction = function(sortingPeriod = "") {
+  const div = document.getElementById("description");
+  div.style.display = "block";
+  div.style.zIndex = Z_DESCRIPTION;
+  const title = document.getElementById("title");
+  const author = document.getElementById("author");
+  const flair = document.getElementById("flair");
+  const sub = document.getElementById("sub");
+  const date = document.getElementById("date");
+  return cnt => {
+    title.innerHTML = cnt.title.replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/\"/g,"&quot;").replace(/\'/g,"&#39;").replace(/\//g,"&#x2F;");
+    title.href = cnt.permalink;
+    author.textContent = "/u/" + cnt.author;
+    author.href = "https://www.reddit.com/user/" + cnt.author + "/posts/";
+    flair.textContent = cnt.flair ? "(" + cnt.flair + ")" : "";
+    sub.textContent = "/r/" + cnt.subreddit;
+    sub.href = "https://www.reddit.com/r/" + cnt.subreddit;
+    const now = new Date(Date.now());
+    const elapsed = now - cnt.created;
+    const minutesAgo = elapsed / 1000 / 60;
+    const hoursAgo = minutesAgo / 60;
+    const ago = (n, s) => "" + Math.round(n) + " " + s +
+      (Math.round(n) > 1 ? "s" : "") + " ago";
+    const midnight = now - ((now.getHours() * 60 + now.getMinutes()) * 60 +
+      now.getSeconds()) * 1000 - now.getMilliseconds();
+    const daysAgo = Math.ceil((midnight - cnt.created) / 1000 / 60 / 60 / 24);
+    if (minutesAgo < 1)
+      date.textContent = "just now";
+    else if (minutesAgo < 60)
+      date.textContent = ago(minutesAgo, "minute");
+    else if (hoursAgo < 24)
+      date.textContent = ago(hoursAgo, "hour");
+    else if ((daysAgo <= 31 && ["year","all"].indexOf(sortingPeriod) === -1) ||
+        (daysAgo >= 7 && sortingPeriod === ""))
+      date.textContent = daysAgo === 1 ? "yesterday" : ago(daysAgo, "day");
+    else if (cnt.created.getFullYear() === now.getFullYear())
+      date.textContent = "on " +
+        cnt.created.toLocaleString("default", { month: "long" }) +
+        " " + cnt.created.getDate();
+    else
+      date.textContent = "on " +
+        cnt.created.toLocaleString("default", { month: "short" }) +
+        " " + cnt.created.getDate() + " " + cnt.created.getFullYear();
   };
 };
 
-const createTimeDisplay = function(size=256) {
+const createTimepiece = function(size=256) {
   let progress = 0;
   let pause = false;
   let number = null;
@@ -57,16 +59,11 @@ const createTimeDisplay = function(size=256) {
   const pMin = css.getPropertyValue("--primary-minor");
   const sMaj = css.getPropertyValue("--secondary-major");
   const sMin = css.getPropertyValue("--secondary-minor");
-  const canvas = document.body.appendChild(document.createElement("canvas"));
+  const canvas = document.getElementById("timepiece");
+  canvas.style.display = "block";
   canvas.width = size;
   canvas.height = size;
-  canvas.style.position = "absolute";
   canvas.style.zIndex = Z_TIME_DISPLAY;
-  canvas.style.bottom = 0;
-  canvas.style.right = 0;
-  canvas.style.margin = "1rem";
-  canvas.style.width = "5rem";
-  canvas.style.height = "5rem";
   const ctx = canvas.getContext("2d");
   const r1 = size / 2;
   const r2 = r1 * 7/12;
@@ -75,10 +72,6 @@ const createTimeDisplay = function(size=256) {
   const r5 = r1 / 2;
   const easeQuad = t => t < 1/2 ? 2*t*t : -1+(4-2*t)*t;
   const easeCube = t => t < 1/2 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1;
-  const easeQuadIn = t => t*t;
-  const easeCubeIn = t => t*t*t;
-  const easeQuadOut = t => t*(2-t);
-  const easeCubeOut = t => (--t)*t*t+1;
   const easeSineIn = t => -Math.cos(t*(Math.PI/2))+1;
   const easeSineOut = t => Math.sin(t*(Math.PI/2));
   const crown = function(color, inner, outer, t1, t2, pointMult=.2) {
@@ -190,7 +183,7 @@ const createTimeDisplay = function(size=256) {
   };
 };
 
-const createMediaHandler = function(setup, tDis, preload = 1, tAbort = 6000) {
+const createMediaHandler = function(setup, tp, preload = 2, tAbort = 6000) {
   let media = null;
   let foreground = false;
   const isImage = () => media instanceof HTMLImageElement;
@@ -211,6 +204,7 @@ const createMediaHandler = function(setup, tDis, preload = 1, tAbort = 6000) {
     }
   };
   window.addEventListener("resize", fit);
+  window.addEventListener("orientationchange", fit);
   const load = content => new Promise((res, rej) => {
     if (!content) return rej();
     const elm = document.createElement(content.type);
@@ -295,11 +289,11 @@ const createMediaHandler = function(setup, tDis, preload = 1, tAbort = 6000) {
         preloaded[i] = null;
       }
     }
-    const animID = tDis.animateLoading();
+    const animID = tp.animateLoading();
     updateID += 1;
     const safeguard = updateID;
     Promise.resolve(preloaded[crt]).then(elm => {
-      tDis.stopLoadingAnimation(animID);
+      tp.stopLoadingAnimation(animID);
       if (updateID !== safeguard) return rej("expired");
       if (!elm) return rej("nocontent");
       if (media !== null) {
@@ -310,9 +304,10 @@ const createMediaHandler = function(setup, tDis, preload = 1, tAbort = 6000) {
         document.body.removeChild(media);
       }
       media = elm;
-      fit();
-      (foreground ? goForeground : goBackground)();
       document.body.appendChild(media);
+      fit();
+      if (isImage()) media.onload = fit;
+      (foreground ? goForeground : goBackground)();
       res(computeDuration());
     });
   });
