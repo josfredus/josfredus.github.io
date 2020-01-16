@@ -27,16 +27,10 @@ const extractContentSource = post => new Promise((res, rej) => {
     const r = new XMLHttpRequest();
     r.responseType = "json";
     r.open("GET", "https://api.gfycat.com/v1/gfycats/" + id);
-    const hdlError = function(s) {
-      console.log(s + " loading gfycat sources: " + post.url);
-      rej(post);
-    };
-    r.addEventListener("error", () => hdlError("error"));
-    r.addEventListener("abort", () => hdlError("abort"));
+    r.addEventListener("error", rej);
+    r.addEventListener("abort", rej);
     r.addEventListener("load", function() {
       const sources = [];
-      // if (r.response && r.response.gfyItem && r.response.gfyItem.mobileUrl)
-        // sources.push(https(r.response.gfyItem.mobileUrl));
       if (r.response && r.response.gfyItem && r.response.gfyItem.mp4Url)
         sources.push(https(r.response.gfyItem.mp4Url));
       if (r.response && r.response.gfyItem && r.response.gfyItem.webmUrl)
@@ -44,7 +38,7 @@ const extractContentSource = post => new Promise((res, rej) => {
       if (sources.length > 0)
         res({ src: sources, type: "video" });
       else
-        hdlError("no result");
+        rej();
     });
     r.send();
   }
