@@ -111,7 +111,7 @@ const setUpTheShow = timepiece => new Promise(function(res, rej) {
   const rvsStartInp = document.getElementById("reverseStart");
   const rvsLoopBtn = document.getElementById("reverseLoop");
   const rvsLoopTgl = makeBtnToggle(rvsLoopBtn);
-  const rvsP = document.getElementById("reverseP");
+  const rvsP = document.getElementById("reverseDetails");
   reverseTgl.setOnPutOn(
     () => settingsDiv.insertBefore(rvsP, document.getElementById("start")));
   reverseTgl.setOnPutOff(() => settingsDiv.removeChild(revP));

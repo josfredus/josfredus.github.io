@@ -1,6 +1,6 @@
 :root {
   --primary-major: #ff69b4;
-  --primary-minor: #ffb3de;  /* or ffddf4 */
+  --primary-minor: #ffb3de;
   --secondary-major: #989898;
   --secondary-minor: #e0e0e0;
   --background-color: #fffefe;
@@ -8,6 +8,28 @@
 body {
   margin: 0;
   background-color: var(--background-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+}
+
+#settings {
+  max-width: 50rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+#afterPeriod, #loopDisclaimer, #errorLog {
+  align-self: center;
+}
+.btnrow {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: stretch;
+}
+.btnrow > * {
+  flex: 1;
 }
 .onbtn {
   background-color: var(--primary-major);
@@ -33,7 +55,6 @@ body {
 .primaryLink {
   text-decoration: none;
   color: var(--primary-major);
-  /* text-shadow: var(--secondary-minor) 1px 1px; */
 }
 .primaryLink:hover, .primaryLink:active {
   color: var(--primary-minor);
@@ -47,8 +68,7 @@ body {
 }
 #title {
   display: block;
-  margin-bottom: 0.1rem;
-  font: 2rem helvetica, sans-serif;
+  font: 1.75rem helvetica, sans-serif;
 }
 #timepiece {
   position: absolute;

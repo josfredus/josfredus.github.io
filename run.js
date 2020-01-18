@@ -153,8 +153,8 @@ const createEventStack = function(media) {
 };
 
 const runTheShow = (setup, timepiece) => new Promise((res, rej) => {
-  document.body.style.overflow = "hidden";
   document.body.removeChild(document.getElementById("settings"));
+  document.body.style.overflow = "hidden";
   const programme = createProgramme(setup);
   const describe = createDescribeFunction(setup.xtrs[0].period);
   const media = createMediaHandler(setup, timepiece);
