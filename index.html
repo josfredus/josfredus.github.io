@@ -15,7 +15,7 @@
   </head>
   <body>
     <div id="settings">
-      <input id="subs" autofocus placeholder="pics gifs aww me_irl NatureIsFuckingLit" spellcheck="false">
+      <input id="subs" autofocus placeholder="pics gifs aww me_irl" spellcheck="false">
       <div id="sorting" class="btnrow"></div>
       <div id="period" class="btnrow"></div>
       <div id="afterPeriod">Skip every <input id="duration" type="number" min="1" step="1" value="30"> seconds</div>
@@ -24,10 +24,10 @@
       <div id="loopDisclaimer">(Videos will always fully play at least once)</div>
       <button id="reverse" class="offbtn">Climb up the listings</button>
       <div id="reverseDetails">
-        Start from #<input id="reverseStart" type="number" min="1" max="100" step="1" value="5"> (1-100)
+        <div id="rvrStartDiv"><div>Start from (1-100):</div><div>#<input id="reverseStart" type="number" min="1" max="100" step="1" value="5"></div></div>
         <button id="reverseLoop" class="offbtn">(Loop after reaching top)</button>
       </div>
-      <button id="start" class="onbtn">Show Must Go On!</button>
+      <button id="start">Show Must Go On!</button>
       <div id="errorLog"></div>
     </div>
     <div id="description">

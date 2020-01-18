@@ -11,7 +11,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 50vh;
+  min-height: 75vh;
 }
 
 #settings {
@@ -19,9 +19,23 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  font: 1rem sans-serif;
+  color: var(--secondary-major);
+}
+#settings > * {
+  margin-bottom: .5rem;
 }
 #afterPeriod, #loopDisclaimer, #errorLog {
   align-self: center;
+}
+#settings button {
+  font: 1.25rem sans-serif;
+  color: #504040;
+  margin-left: .25rem;
+  margin-right: .25rem;
+  border: 0;
+  border-radius: .5rem;
+  padding: .5rem 0;
 }
 .btnrow {
   display: flex;
@@ -32,20 +46,64 @@ body {
   flex: 1;
 }
 .onbtn {
-  background-color: var(--primary-major);
+  background-color: var(--primary-minor);
 }
 .offbtn {
-  background-color: var(--secondary-major);
+  background-color: var(--secondary-minor);
+}
+#subs {
+  margin-left: .25rem;
+  margin-right: .25rem;
+	border: 0;
+	border-bottom: thin solid var(--primary-major);
+	font: 3rem monospace;
+	color: var(--secondary-major);
+	caret-color: var(--primary-major);
+}
+#subs:focus {
+	outline: none;
+}
+#subs::placeholder {
+	color: var(--secondary-minor);
+}
+#duration, #reverseStart {
+	width: 4rem;
+	border: 0;
+	border-bottom: thin solid var(--secondary-major);
+  padding-left: .5rem;
+	font: 1.5rem monospace;
+	color: var(--primary-major);
+	caret-color: var(--primary-major);
+}
+#duration:focus, #reverseStart:focus {
+	outline: none;
+}
+#reverseDetails {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: stretch;
+}
+#rvrStartDiv {
+  flex: 2;
+  display: flex;
+  flex-flow: column wrap;
+  align-items: center;
+}
+#reverseLoop {
+  flex: 1;
+}
+#start {
+  background-color: #ffdeb3;
 }
 
 #description {
   position: absolute;
   bottom: 0;
   left: 0;
-  margin: 1rem;
+  margin: .5rem;
   padding: 0;
   max-width: 75%;
-  font: 1rem verdana, sans-serif;
+  font: .9rem verdana, sans-serif;
   color: var(--secondary-major);
 }
 #description * {
@@ -68,7 +126,7 @@ body {
 }
 #title {
   display: block;
-  font: 1.75rem helvetica, sans-serif;
+  font: 1.5rem helvetica, sans-serif;
 }
 #timepiece {
   position: absolute;

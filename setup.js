@@ -101,7 +101,7 @@ const setUpTheShow = timepiece => new Promise(function(res, rej) {
   });
   const shuffleTgl = makeBtnToggle(document.getElementById("shuffle"));
   const loopRow = createBtnRow([
-    ["noloop", "Don't loop<br>videos"],
+    ["noloop", "Don't loop videos"],
     ["underloop", "Loop no longer than images"],
     ["cutloop", "Loop and cut, as long as images"],
     ["overloop", "Loop once more, longer than images"]
@@ -114,7 +114,7 @@ const setUpTheShow = timepiece => new Promise(function(res, rej) {
   const rvsP = document.getElementById("reverseDetails");
   reverseTgl.setOnPutOn(
     () => settingsDiv.insertBefore(rvsP, document.getElementById("start")));
-  reverseTgl.setOnPutOff(() => settingsDiv.removeChild(revP));
+  reverseTgl.setOnPutOff(() => settingsDiv.removeChild(rvsP));
   settingsDiv.removeChild(rvsP);
   let processing = false;
   const letsGetItOn = function() {
