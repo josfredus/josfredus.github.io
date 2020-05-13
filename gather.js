@@ -1,6 +1,6 @@
 const https = s => s.slice(0, 5) === "http:" ? "https" + s.slice(4) : s;
 const imgRegExps = [/\.jpg$/, /\.jpeg$/, /\.png$/, /\.bmp$/, /\.gif$/];
-const gfyRegExps = [/gfycat\.com\/[A-Za-z]+$/,
+const gfyRegExps = [/gfycat\.com\/[A-Za-z]+$/, /redgifs\.com\/[A-Za-z]+$/,
   /gfycat\.com\/gifs\/detail\/[A-Za-z]+$/];
 
 const extractContentSource = post => new Promise((res, rej) => {
